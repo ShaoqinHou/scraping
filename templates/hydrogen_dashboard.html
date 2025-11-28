@@ -328,6 +328,7 @@
                 <button type="button" id="ai-start-btn" onclick="startAiExtractor()">启动 AI 提取</button>
                 <button type="button" class="secondary" onclick="window.open('/classic-projects', '_blank')">全字段视图</button>
                 <button type="button" class="secondary" onclick="window.open('/api/hydrogen/projects/classic/export', '_blank')">导出 CSV</button>
+                <button type="button" class="secondary" onclick="resetAiProjects()">清空 AI 增强记录</button>
                 <label>最大项目数：<input type="number" id="ai-max-projects" value="10" style="width: 60px;"></label>
                 <label>并发数：<input type="number" id="ai-max-workers" value="5" style="width: 50px;"></label>
             </div>
@@ -375,7 +376,25 @@
                 }
             });
         }
-        
+
+        function resetAiProjects() {
+            if (!confirm('确定要删除所有“AI 增强”记录并允许经典规则重跑这些文章吗？')) {
+                return;
+            }
+            fetch('/api/hydrogen/projects/ai/reset', {
+                method: 'POST'
+            }).then(resp => resp.json())
+              .then(data => {
+                  if (!data.ok) {
+                      alert('清空失败：' + (data.message || '未知错误'));
+                  } else {
+                      alert(`已删除 ${data.deleted || 0} 条 AI 增强记录，可重新运行经典提取。`);
+                  }
+              }).catch(err => {
+                  alert('清空失败：' + (err.message || err));
+              });
+        }
+
         function saveAiConfig() {
             const input = document.getElementById('ai-api-key');
             const key = (input.value || '').trim();

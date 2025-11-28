@@ -998,6 +998,27 @@ def run_ai_extractor():
 def get_ai_extractor_status():
     return jsonify(ai_extractor_status)
 
+@app.route("/api/hydrogen/projects/ai/reset", methods=["POST"])
+def reset_ai_projects():
+    conn = get_db_connection()
+    try:
+        cur = conn.execute("SELECT url FROM projects_classic WHERE is_ai_improved = 1")
+        urls = [row["url"] for row in cur.fetchall()]
+        deleted = 0
+        if urls:
+            with conn:
+                conn.execute("DELETE FROM projects_classic WHERE is_ai_improved = 1")
+                conn.executemany(
+                    "UPDATE articles SET classic_score=0, worth_classic=0, classic_quality=NULL WHERE url=?",
+                    [(u,) for u in urls],
+                )
+            deleted = len(urls)
+        return jsonify({"ok": True, "deleted": deleted})
+    except Exception as exc:
+        return jsonify({"ok": False, "message": str(exc)}), 500
+    finally:
+        conn.close()
+
 
 @app.route("/api/hydrogen/projects/classic/export")
 def export_classic_projects():
