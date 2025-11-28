@@ -205,8 +205,8 @@
             <div class="form-row">
                 <button type="button" id="hydrogen-start-btn" onclick="startHydrogenMonitor()">启动监控</button>
                 <button type="button" class="secondary" onclick="resetHydrogenArticles()" style="color: #c53030; border-color: #c53030;">清空数据</button>
-                <label>最大新文章：<input type="number" id="hydrogen-max-new" value="1000" style="width: 60px;"></label>
-                <label>最大页数：<input type="number" id="hydrogen-max-pages" value="10" style="width: 60px;"></label>
+                <label>最大新文章：<input type="number" id="hydrogen-max-new" value="3000" style="width: 60px;"></label>
+                <label>最大页数：<input type="number" id="hydrogen-max-pages" value="15" style="width: 60px;"></label>
             </div>
             <div class="form-row" style="margin-top: 12px; border-top: 1px dashed #eee; padding-top: 8px;">
                 <label>筛选频道：<select id="hydrogen-article-channel"
@@ -256,7 +256,7 @@
                 <label>最大文章：<input type="number" id="classic-max-articles" value="0" placeholder="0=不限"
                         style="width: 60px;"></label>
                 <label>分数阈值：<input type="number" id="classic-score-threshold" value="2" style="width: 50px;"></label>
-                <label>并发数：<input type="number" id="classic-max-workers" value="5" style="width: 50px;"></label>
+                <label>并发数：<input type="number" id="classic-max-workers" value="1" style="width: 50px;"></label>
                 <label><input type="checkbox" id="classic-show-browser">显示浏览器</label>
             </div>
             <div class="form-row" style="margin-top: 12px; border-top: 1px dashed #eee; padding-top: 8px;">
@@ -329,8 +329,8 @@
                 <button type="button" class="secondary" onclick="window.open('/classic-projects', '_blank')">全字段视图</button>
                 <button type="button" class="secondary" onclick="window.open('/api/hydrogen/projects/classic/export', '_blank')">导出 CSV</button>
                 <button type="button" class="secondary" onclick="resetAiProjects()">清空 AI 增强记录</button>
-                <label>最大项目数：<input type="number" id="ai-max-projects" value="10" style="width: 60px;"></label>
-                <label>并发数：<input type="number" id="ai-max-workers" value="5" style="width: 50px;"></label>
+                <label>最大项目数：<input type="number" id="ai-max-projects" value="4000" style="width: 60px;"></label>
+                <label>并发数：<input type="number" id="ai-max-workers" value="2000" style="width: 50px;"></label>
             </div>
         </section>
     </main>
@@ -468,8 +468,8 @@
             const btn = document.getElementById('ai-start-btn');
             if (btn) btn.disabled = true;
             lastAiStage = 'running'; // Force state
-            const maxProj = parseInt(document.getElementById('ai-max-projects').value || '10', 10);
-            const maxWork = parseInt(document.getElementById('ai-max-workers').value || '5', 10);
+            const maxProj = parseInt(document.getElementById('ai-max-projects').value || '4000', 10);
+            const maxWork = parseInt(document.getElementById('ai-max-workers').value || '2000', 10);
             
             fetch('/api/hydrogen/projects/ai/run', {
                 method: 'POST',
@@ -769,7 +769,7 @@
             lastClassicStage = 'running'; // Force state
             const maxArticlesVal = parseInt(document.getElementById('classic-max-articles').value || '0', 10);
             const scoreThresholdVal = parseInt(document.getElementById('classic-score-threshold').value || '2', 10);
-            const maxWorkersVal = parseInt(document.getElementById('classic-max-workers').value || '10', 10);
+            const maxWorkersVal = parseInt(document.getElementById('classic-max-workers').value || '1', 10);
             const showBrowserEl = document.getElementById('classic-show-browser');
             const showBrowser = showBrowserEl ? showBrowserEl.checked : false;
             const payload = {
@@ -879,7 +879,7 @@
                 if (classicPage > classicTotalPages) classicPage = classicTotalPages;
                 const summary = document.getElementById('classic-summary');
                 if (summary) {
-                    summary.textContent = `经典项目记录：${total} 条，页 ${classicPage} / ${classicTotalPages} 。`;
+                    summary.textContent = `经典项目记录：${total} 条，页 ${classicPage} / ${classicTotalPages} 。为获得更完整字段，经典提取后请继续运行“氢能项目（AI 增强提取）”，该步骤很快。`;
                 }
                 const tbody = document.getElementById('classic-project-tbody');
                 if (tbody) {

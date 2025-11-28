@@ -141,7 +141,7 @@ Article Content:
             print(f"Error calling API: {e}")
             return None
 
-    def process_single_project(self, project):
+    def process_single_project_once(self, project):
         if not self.running:
             return None
             
@@ -208,6 +208,16 @@ Article Content:
             return False
         finally:
             conn.close()
+
+    def process_single_project(self, project):
+        # Try once; if it fails (including timeout), try one more time with the same per-request timeout.
+        for attempt in (1, 2):
+            if not self.running:
+                return None
+            ok = self.process_single_project_once(project)
+            if ok:
+                return True
+        return False
 
     def run(self, max_projects=10, max_workers=5, progress_callback=None):
         self.running = True
