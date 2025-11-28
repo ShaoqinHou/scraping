@@ -264,8 +264,8 @@
                             <th style="width: 80px;">阶段</th>
                             <th style="width: 80px;">省份</th>
                             <th style="width: 80px;">城市</th>
-                            <th style="width: 80px;">产能(MW)</th>
-                            <th style="width: 80px;">投资(元)</th>
+                            <th style="width: 80px;">产能</th>
+                            <th style="width: 80px;">投资</th>
                             <th style="width: 150px;">业主/开发商</th>
                             <th style="width: 90px;">发布日期</th>
                             <th style="width: 150px;">备注</th>
@@ -577,28 +577,12 @@
 
 
 
-                    const fmtCapacity = (v) => {
-                        if (v == null || v === '') return '';
-                        const num = Number(v);
-                        if (isNaN(num)) return String(v);
-                        if (num >= 1000) return (num / 1000).toFixed(2) + ' GW';
-                        return num.toFixed(2) + ' MW';
-                    };
-                    const fmtInvestment = (v) => {
-                        if (v == null || v === '') return '';
-                        const num = Number(v);
-                        if (isNaN(num)) return String(v);
-                        if (num >= 1e8) return (num / 1e8).toFixed(2) + ' 亿元';
-                        if (num >= 1e4) return (num / 1e4).toFixed(2) + ' 万元';
-                        return num.toFixed(0) + ' 元';
-                    };
-
                     const tdCap = document.createElement('td');
-                    tdCap.textContent = fmtCapacity(item.capacity_mw);
+                    tdCap.textContent = item.capacity_mw != null ? String(item.capacity_mw) : '';
                     tr.appendChild(tdCap);
 
                     const tdInv = document.createElement('td');
-                    tdInv.textContent = fmtInvestment(item.investment_cny);
+                    tdInv.textContent = item.investment_cny != null ? String(item.investment_cny) : '';
                     tr.appendChild(tdInv);
 
                     const tdOwner = document.createElement('td');

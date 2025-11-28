@@ -417,8 +417,8 @@
                             <th>频道</th>
                             <th>项目名称</th>
                             <th>阶段</th>
-                            <th>容量(MW)</th>
-                            <th>投资(元)</th>
+                            <th>容量</th>
+                            <th>投资</th>
                             <th>质量</th>
                             <th>链接</th>
                         </tr>
@@ -1003,21 +1003,6 @@
                 if (tbody) {
                     tbody.innerHTML = '';
                     items.forEach(item => {
-                        const fmtCapacity = (v) => {
-                            if (v == null || v === '') return '';
-                            const num = Number(v);
-                            if (isNaN(num)) return String(v);
-                            if (num >= 1000) return (num / 1000).toFixed(2) + ' GW';
-                            return num.toFixed(2) + ' MW';
-                        };
-                        const fmtInvestment = (v) => {
-                            if (v == null || v === '') return '';
-                            const num = Number(v);
-                            if (isNaN(num)) return String(v);
-                            if (num >= 1e8) return (num / 1e8).toFixed(2) + ' 亿元';
-                            if (num >= 1e4) return (num / 1e4).toFixed(2) + ' 万元';
-                            return num.toFixed(0) + ' 元';
-                        };
                         const tr = document.createElement('tr');
                         const tdDate = document.createElement('td');
                         tdDate.textContent = item.published_at || '';
@@ -1028,9 +1013,9 @@
                         const tdStage = document.createElement('td');
                         tdStage.textContent = item.stage || '';
                         const tdCap = document.createElement('td');
-                        tdCap.textContent = fmtCapacity(item.capacity_mw);
+                        tdCap.textContent = item.capacity_mw != null ? String(item.capacity_mw) : '';
                         const tdInv = document.createElement('td');
-                        tdInv.textContent = fmtInvestment(item.investment_cny);
+                        tdInv.textContent = item.investment_cny != null ? String(item.investment_cny) : '';
                         const tdQ = document.createElement('td');
                         tdQ.textContent = item.classic_quality || '';
                         const tdLink = document.createElement('td');

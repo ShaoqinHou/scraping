@@ -1048,8 +1048,8 @@ def export_classic_projects():
         ("质量", "classic_quality"),
         ("省份", "province"),
         ("城市", "city"),
-        ("产能(MW)", "capacity_mw"),
-        ("投资(亿)", "investment_cny_billion"),
+        ("产能", "capacity_mw"),
+        ("投资", "investment_cny"),
         ("业主/开发商", "owner"),
         ("发布日期", "published_at"),
         ("备注", "user_note"),
@@ -1068,11 +1068,6 @@ def export_classic_projects():
 
     def normalize(row):
         data = dict(row)
-        inv = data.get("investment_cny")
-        try:
-            data["investment_cny_billion"] = float(inv) / 1e8 if inv is not None else ""
-        except Exception:
-            data["investment_cny_billion"] = ""
         # Boolean to Y/N
         ai_val = data.get("is_ai_improved")
         if ai_val in (1, True, "1", "true", "True"):
