@@ -149,6 +149,8 @@ Article Content:
             content = article_row['main_text'] if article_row and article_row['main_text'] else project['project_summary']
             
             if not content:
+                cursor.execute("UPDATE projects_classic SET is_ai_improved = 2, project_progress = COALESCE(project_progress, '') || '[AI跳过: 无正文]' WHERE id = ?", (project['id'],))
+                conn.commit()
                 return None
                 
             result = self.extract_project_info(project['article_title'], content)
@@ -194,6 +196,11 @@ Article Content:
             return False
         except Exception as e:
             print(f"Error processing project {project['id']}: {e}")
+            try:
+                cursor.execute("UPDATE projects_classic SET is_ai_improved = 2, project_progress = COALESCE(project_progress, '') || '[AI失败]' WHERE id = ?", (project['id'],))
+                conn.commit()
+            except Exception:
+                pass
             return False
         finally:
             conn.close()
@@ -202,13 +209,16 @@ Article Content:
         self.running = True
         conn = self.get_db_connection()
         cursor = conn.cursor()
-        
+        total = 0
+        completed = 0
+
         try:
-            # Prioritize projects that haven't been improved by AI yet
+            # Only pick rows not yet improved (0/NULL). Skipped rows (2) are not retried.
             cursor.execute("""
                 SELECT id, article_title, project_summary, url 
                 FROM projects_classic 
                 WHERE is_ai_improved = 0 OR is_ai_improved IS NULL
+                ORDER BY id ASC
                 LIMIT ?
             """, (max_projects,))
             projects = [dict(row) for row in cursor.fetchall()]
@@ -216,8 +226,10 @@ Article Content:
             total = len(projects)
             if progress_callback:
                 progress_callback(stage="running", message=f"发现 {total} 个待处理项目", current=0, total=total)
+
+            if total == 0:
+                return
             
-            completed = 0
             with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {executor.submit(self.process_single_project, p): p for p in projects}
                 
@@ -225,9 +237,9 @@ Article Content:
                     if not self.running:
                         executor.shutdown(wait=False, cancel_futures=True)
                         break
-                        
-                    completed += 1
+                    
                     project = futures[future]
+                    completed += 1
                     if progress_callback:
                         progress_callback(stage="running", message=f"已处理: {project['article_title']}", current=completed, total=total)
                 
@@ -235,7 +247,7 @@ Article Content:
             conn.close()
             self.running = False
             if progress_callback:
-                progress_callback(stage="idle", message="AI 提取完成", current=total, total=total)
+                progress_callback(stage="idle", message="AI 提取完成", current=completed, total=total)
 
 def main():
     api_key = os.environ.get("SILICONFLOW_API_KEY")
