@@ -577,12 +577,28 @@
 
 
 
+                    const fmtCapacity = (v) => {
+                        if (v == null || v === '') return '';
+                        const num = Number(v);
+                        if (isNaN(num)) return String(v);
+                        if (num >= 1000) return (num / 1000).toFixed(2) + ' GW';
+                        return num.toFixed(2) + ' MW';
+                    };
+                    const fmtInvestment = (v) => {
+                        if (v == null || v === '') return '';
+                        const num = Number(v);
+                        if (isNaN(num)) return String(v);
+                        if (num >= 1e8) return (num / 1e8).toFixed(2) + ' 亿元';
+                        if (num >= 1e4) return (num / 1e4).toFixed(2) + ' 万元';
+                        return num.toFixed(0) + ' 元';
+                    };
+
                     const tdCap = document.createElement('td');
-                    tdCap.textContent = item.capacity_mw != null ? String(item.capacity_mw) : '';
+                    tdCap.textContent = fmtCapacity(item.capacity_mw);
                     tr.appendChild(tdCap);
 
                     const tdInv = document.createElement('td');
-                    tdInv.textContent = item.investment_cny != null ? String(item.investment_cny) : '';
+                    tdInv.textContent = fmtInvestment(item.investment_cny);
                     tr.appendChild(tdInv);
 
                     const tdOwner = document.createElement('td');
@@ -627,10 +643,10 @@
                     tr.appendChild(tdLink);
 
                     // Less important
-                    const tdH2Tpy = document.createElement('td'); tdH2Tpy.textContent = item.h2_output_tpy != null ? String(item.h2_output_tpy) : ''; tr.appendChild(tdH2Tpy);
-                    const tdH2Nm3 = document.createElement('td'); tdH2Nm3.textContent = item.h2_output_nm3_per_h != null ? String(item.h2_output_nm3_per_h) : ''; tr.appendChild(tdH2Nm3);
+                    const tdH2Tpy = document.createElement('td'); tdH2Tpy.textContent = item.h2_output_tpy != null ? String(item.h2_output_tpy) + ' t/y' : ''; tr.appendChild(tdH2Tpy);
+                    const tdH2Nm3 = document.createElement('td'); tdH2Nm3.textContent = item.h2_output_nm3_per_h != null ? String(item.h2_output_nm3_per_h) + ' Nm³/h' : ''; tr.appendChild(tdH2Nm3);
                     const tdElec = document.createElement('td'); tdElec.textContent = item.electrolyzer_count != null ? String(item.electrolyzer_count) : ''; tr.appendChild(tdElec);
-                    const tdCo2 = document.createElement('td'); tdCo2.textContent = item.co2_reduction_tpy != null ? String(item.co2_reduction_tpy) : ''; tr.appendChild(tdCo2);
+                    const tdCo2 = document.createElement('td'); tdCo2.textContent = item.co2_reduction_tpy != null ? String(item.co2_reduction_tpy) + ' t/y' : ''; tr.appendChild(tdCo2);
                     const tdProduct = document.createElement('td'); tdProduct.textContent = item.product_category || ''; tr.appendChild(tdProduct);
                     const tdEnergy = document.createElement('td'); tdEnergy.textContent = item.energy_type || ''; tr.appendChild(tdEnergy);
                     const tdLocation = document.createElement('td'); tdLocation.textContent = item.location || ''; tr.appendChild(tdLocation);
