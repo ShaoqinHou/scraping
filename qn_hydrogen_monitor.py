@@ -297,7 +297,9 @@ class QNHydrogenMonitor:
                     pages_without_new += 1
                 else:
                     pages_without_new = 0
-                if pages_without_new >= pages_without_new_limit:
+                # If user explicitly sets max_pages_per_channel, honor it even when no new items are found.
+                # Otherwise stop after pages_without_new_limit consecutive empty pages.
+                if not max_pages_per_channel and pages_without_new >= pages_without_new_limit:
                     break
                 page += 1
         total_in_db = self._count_articles()
