@@ -1,0 +1,7 @@
+flask
+pandas
+beautifulsoup4
+playwright
+requests
+openai
+

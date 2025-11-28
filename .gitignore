@@ -1,0 +1,25 @@
+# Virtual envs and caches
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Playwright/pyinstaller artifacts
+ms-playwright/
+dist/
+dist_new/
+build/
+build_new/
+*.spec
+
+# Logs and temp
+*.log
+ai_project_analyzer.log
+
+# Local data/output
+*.db
+detailed_project_data_*.csv
+project_collector.zip
+
+# Node/browsers cache
+playwright/.cache/

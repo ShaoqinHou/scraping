@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>氢能项目（经典字段视图）</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            color: #333;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: #2b6cb0;
+            color: #fff;
+            padding: 12px 20px;
+            flex: 0 0 auto;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        main {
+            padding: 12px 16px 12px;
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 12px 16px 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            min-height: 0;
+            /* Crucial for nested flex scrolling */
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+            flex: 0 0 auto;
+        }
+
+        label {
+            white-space: nowrap;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        input[type="date"],
+        select {
+            padding: 2px 4px;
+            font-size: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid #2b6cb0;
+            background: #2b6cb0;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        button.secondary {
+            background: #fff;
+            color: #2b6cb0;
+        }
+
+        .status-line {
+            font-size: 12px;
+            margin-top: 6px;
+            color: #444;
+            flex: 0 0 auto;
+        }
+
+        .status-line strong {
+            color: #2b6cb0;
+        }
+
+        .table-scroll {
+            flex: 1 1 auto;
+            overflow: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: #fff;
+            margin-top: 6px;
+            max-height: none;
+            /* Remove fixed max-height */
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        th,
+        td {
+            border: 1px solid #e2e8f0;
+            padding: 3px 4px;
+            text-align: left;
+        }
+
+        th {
+            background: #edf2f7;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            height: 40px;
+            /* Fixed height for first row */
+            box-sizing: border-box;
+            white-space: nowrap;
+            /* Prevent wrapping affecting height */
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        thead tr.filter-row th {
+            background: #f7fafc;
+            position: sticky;
+            top: 40px;
+            /* Match height of first row */
+            z-index: 10;
+            height: 40px;
+            /* Fixed height for second row */
+            padding: 2px 4px;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f7fafc;
+        }
+
+        tbody tr:hover {
+            background: #e6fffa;
+        }
+
+        .filter-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 2px 3px;
+            font-size: 11px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 500px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .modal-section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-section:last-child {
+            border-bottom: none;
+        }
+
+        .modal-section h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: #2d3748;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>氢能项目（经典规则提取全字段视图）</h1>
+    </header>
+    <main>
+        <section>
+            <div class="form-row">
+                <label>频道：
+                    <select id="full-channel-filter">
+                        <option value="">全部频道</option>
+                    </select>
+                </label>
+                <label>质量等级：
+                    <select id="full-quality-filter">
+                        <option value="">全部</option>
+                        <option value="A">A（项目名 + 阶段 + 容量/投资）</option>
+                        <option value="B">B（项目名 + 阶段或数字）</option>
+                        <option value="C">C（仅项目名）</option>
+                    </select>
+                </label>
+                <label>每页条数：
+                    <input type="number" id="full-page-size" min="5" value="50">
+                </label>
+                <button type="button" class="secondary" id="full-prev">上一页</button>
+                <button type="button" class="secondary" id="full-next">下一页</button>
+                <button type="button" class="secondary" id="full-reload">刷新</button>
+                <button type="button" class="secondary" id="full-export">导出 CSV</button>
+            </div>
+            <div class="status-line" id="full-summary">
+                经典项目记录：0 条，页 1 / 1。
+            </div>
+            <div class="table-scroll">
+                <table id="full-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">AI</th>
+                            <th style="width: 60px;">文章类型</th>
+                            <th style="width: 50px;">来源</th>
+                            <th style="width: 150px;">项目名称</th>
+                            <th style="width: 200px;">项目概况</th>
+                            <th style="width: 200px;">数值数据</th>
+                            <th style="width: 150px;">项目进展情况</th>
+                            <th style="width: 80px;">阶段</th>
+                            <th style="width: 80px;">省份</th>
+                            <th style="width: 80px;">城市</th>
+                            <th style="width: 80px;">产能(MW)</th>
+                            <th style="width: 80px;">投资(亿)</th>
+                            <th style="width: 150px;">业主/开发商</th>
+                            <th style="width: 90px;">发布日期</th>
+                            <th style="width: 150px;">备注</th>
+                            <th style="width: 50px;">链接</th>
+                            <!-- Less important fields -->
+                            <th style="width: 80px;">H2产能(t/y)</th>
+                            <th style="width: 80px;">H2产能(Nm³/h)</th>
+                            <th style="width: 80px;">电解槽数</th>
+                            <th style="width: 80px;">CO2减排</th>
+                            <th style="width: 100px;">产品类别</th>
+                            <th style="width: 100px;">能源类型</th>
+                            <th style="width: 100px;">地点详情</th>
+                            <th style="width: 90px;">事件日期</th>
+                            <th style="width: 100px;">频道</th>
+                            <th style="width: 150px;">文章标题</th>
+                            <th style="width: 50px;">质量</th>
+                        </tr>
+                    </thead>
+                    <thead>
+                        <tr class="filter-row">
+                            <th></th> <!-- AI Status -->
+                            <th>
+                                <select id="full-filter-article-type" class="filter-input">
+                                    <option value="">全部</option>
+                                    <option value="项目">项目</option>
+                                    <option value="招标">招标</option>
+                                    <option value="政策">政策</option>
+                                    <option value="新闻">新闻</option>
+                                    <option value="市场">市场</option>
+                                    <option value="其他">其他</option>
+                                </select>
+                            </th>
+                            <th>
+                                <select id="full-filter-type" class="filter-input">
+                                    <option value="">全部</option>
+                                    <option value="single">单项</option>
+                                    <option value="list">列表</option>
+                                </select>
+                            </th>
+                            <th><input type="text" id="full-filter-project-name" class="filter-input"
+                                    placeholder="名称包含..."></th>
+                            <th><input type="text" id="full-filter-overview" class="filter-input" placeholder="概况包含...">
+                            </th>
+                            <th><input type="text" id="full-filter-numerical" class="filter-input"
+                                    placeholder="数值包含...">
+                            </th>
+                            <th><input type="text" id="full-filter-progress" class="filter-input" placeholder="进展包含...">
+                            </th>
+                            <th><input type="text" id="full-filter-stage" class="filter-input" placeholder="阶段包含...">
+                            </th>
+                            <th><input type="text" id="full-filter-province" class="filter-input" placeholder="省份...">
+                            </th>
+                            <th><input type="text" id="full-filter-city" class="filter-input" placeholder="城市..."></th>
+                            <th>
+                                <input type="number" id="full-filter-capacity-min" class="filter-input"
+                                    placeholder="Min" style="width: 45%;">
+                                <input type="number" id="full-filter-capacity-max" class="filter-input"
+                                    placeholder="Max" style="width: 45%;">
+                            </th>
+                            <th>
+                                <input type="number" id="full-filter-investment-min" class="filter-input"
+                                    placeholder="Min" style="width: 45%;">
+                                <input type="number" id="full-filter-investment-max" class="filter-input"
+                                    placeholder="Max" style="width: 45%;">
+                            </th>
+                            <th><input type="text" id="full-filter-owner" class="filter-input" placeholder="业主包含...">
+                            </th>
+                            <th>
+                                <input type="date" id="full-filter-date-from" class="filter-input" style="width: 90%;">
+                                <input type="date" id="full-filter-date-to" class="filter-input" style="width: 90%;">
+                            </th>
+                            <th></th> <!-- Note -->
+                            <th><input type="text" id="full-filter-link" class="filter-input" placeholder="链接..."></th>
+
+                            <!-- Less important filters -->
+                            <th>
+                                <input type="number" id="full-filter-h2tpy-min" class="filter-input" placeholder="Min"
+                                    style="width: 45%;">
+                                <input type="number" id="full-filter-h2tpy-max" class="filter-input" placeholder="Max"
+                                    style="width: 45%;">
+                            </th>
+                            <th>
+                                <input type="number" id="full-filter-h2nm3-min" class="filter-input" placeholder="Min"
+                                    style="width: 45%;">
+                                <input type="number" id="full-filter-h2nm3-max" class="filter-input" placeholder="Max"
+                                    style="width: 45%;">
+                            </th>
+                            <th>
+                                <input type="number" id="full-filter-elec-min" class="filter-input" placeholder="Min"
+                                    style="width: 45%;">
+                                <input type="number" id="full-filter-elec-max" class="filter-input" placeholder="Max"
+                                    style="width: 45%;">
+                            </th>
+                            <th>
+                                <input type="number" id="full-filter-co2-min" class="filter-input" placeholder="Min"
+                                    style="width: 45%;">
+                                <input type="number" id="full-filter-co2-max" class="filter-input" placeholder="Max"
+                                    style="width: 45%;">
+                            </th>
+                            <th><input type="text" id="full-filter-product" class="filter-input" placeholder="产品...">
+                            </th>
+                            <th><input type="text" id="full-filter-energy" class="filter-input" placeholder="能源...">
+                            </th>
+                            <th><input type="text" id="full-filter-location" class="filter-input" placeholder="地点...">
+                            </th>
+                            <th>
+                                <input type="date" id="full-filter-event-from" class="filter-input" style="width: 90%;">
+                                <input type="date" id="full-filter-event-to" class="filter-input" style="width: 90%;">
+                            </th>
+                            <th><select id="full-channel-filter-input" class="filter-input">
+                                    <option value="">全部频道</option>
+                                </select></th>
+                            <th><input type="text" id="full-filter-article-title" class="filter-input"
+                                    placeholder="标题包含..."></th>
+                            <th><input type="text" id="full-filter-quality" class="filter-input" placeholder="A/B/C">
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="full-tbody">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSettings()">&times;</span>
+            <h2>AI 设置 & 提取</h2>
+
+            <div class="modal-section">
+                <h3>1. SiliconFlow API Key</h3>
+                <div class="form-row">
+                    <input type="password" id="apiKeyInput" placeholder="sk-..." style="width: 300px;">
+                    <button onclick="saveApiKey()">保存 Key</button>
+                    <button class="secondary" onclick="deleteApiKey()">删除 Key</button>
+                </div>
+                <div id="keyStatus" style="margin-top: 5px; font-size: 12px; color: #666;">检查中...</div>
+            </div>
+
+            <div class="modal-section">
+                <h3>2. 运行 AI 提取</h3>
+                <p style="font-size: 12px; color: #666;">
+                    AI 将读取数据库中的项目，分析内容，并提取结构化数据（概况、进展、产能等）。
+                </p>
+                <div class="form-row">
+                    <label>处理项目数上限：
+                        <input type="number" id="aiMaxProjects" value="10" style="width: 60px;">
+                    </label>
+                    <label>并发数：
+                        <input type="number" id="aiMaxWorkers" value="20" style="width: 60px;">
+                    </label>
+                    <button onclick="runAIExtraction()">开始提取</button>
+                </div>
+            </div>
+
+            <div id="aiStatus" class="modal-section"
+                style="display: none; background: #f0f9ff; border: 1px solid #bee3f8;">
+                <h3>运行状态</h3>
+                <div style="font-size: 13px;">
+                    <div>阶段: <strong id="aiStage">-</strong></div>
+                    <div>进度: <strong id="aiProgress">-</strong></div>
+                    <div id="aiMessage" style="color: #444; margin-top: 4px;">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        let fullPage = 1;
+        let fullTotalPages = 1;
+        let fullPageSize = 50;
+        let fullChannels = [];
+
+        // Debounce function for search
+        function debounce(func, wait) {
+            let timeout;
+            return function (...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        const loadFullProjects = debounce(async () => {
+            const tbody = document.getElementById('full-tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="25" style="text-align:center;">加载中...</td></tr>';
+
+            // Collect filter values
+            const params = new URLSearchParams();
+            const getVal = (id) => document.getElementById(id)?.value || '';
+
+            params.append('page', fullPage);
+            params.append('page_size', fullPageSize);
+            params.append('type', getVal('full-filter-type'));
+            params.append('name', getVal('full-filter-project-name'));
+            params.append('overview', getVal('full-filter-overview'));
+            params.append('progress', getVal('full-filter-progress'));
+            params.append('stage', getVal('full-filter-stage'));
+            params.append('province', getVal('full-filter-province'));
+            params.append('city', getVal('full-filter-city'));
+            params.append('cap_min', getVal('full-filter-capacity-min'));
+            params.append('cap_max', getVal('full-filter-capacity-max'));
+            params.append('inv_min', getVal('full-filter-investment-min'));
+            params.append('inv_max', getVal('full-filter-investment-max'));
+            params.append('owner', getVal('full-filter-owner'));
+            params.append('date_from', getVal('full-filter-date-from'));
+            params.append('date_to', getVal('full-filter-date-to'));
+            params.append('link', getVal('full-filter-link'));
+
+            params.append('h2tpy_min', getVal('full-filter-h2tpy-min'));
+            params.append('h2tpy_max', getVal('full-filter-h2tpy-max'));
+            params.append('h2nm3_min', getVal('full-filter-h2nm3-min'));
+            params.append('h2nm3_max', getVal('full-filter-h2nm3-max'));
+            params.append('elec_min', getVal('full-filter-elec-min'));
+            params.append('elec_max', getVal('full-filter-elec-max'));
+            params.append('co2_min', getVal('full-filter-co2-min'));
+            params.append('co2_max', getVal('full-filter-co2-max'));
+            params.append('product', getVal('full-filter-product'));
+            params.append('energy', getVal('full-filter-energy'));
+            params.append('location', getVal('full-filter-location'));
+            params.append('event_from', getVal('full-filter-event-from'));
+            params.append('event_to', getVal('full-filter-event-to'));
+            params.append('channel', getVal('full-channel-filter-input')); // Use the filter input's ID
+            params.append('title', getVal('full-filter-article-title'));
+            params.append('quality', getVal('full-filter-quality'));
+
+            try {
+                const response = await fetch(`/api/hydrogen/projects/classic/list?${params.toString()}`);
+                const data = await response.json();
+                const items = data.items || [];
+                const total = data.total || 0;
+
+                fullTotalPages = total > 0 ? Math.ceil(total / fullPageSize) : 1;
+                if (fullPage > fullTotalPages) fullPage = fullTotalPages;
+                const summary = document.getElementById('full-summary');
+                if (summary) {
+                    summary.textContent = `经典项目记录：${total} 条，页 ${fullPage} / ${fullTotalPages}。`;
+                }
+
+                tbody.innerHTML = '';
+
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="25" style="text-align:center;">无数据</td></tr>';
+                    return;
+                }
+
+                items.forEach(item => {
+                    const tr = document.createElement('tr');
+
+                    // AI Status
+                    const tdAi = document.createElement('td');
+                    tdAi.style.textAlign = 'center';
+                    if (item.is_ai_improved) {
+                        tdAi.innerHTML = '<span title="AI Improved" style="color: #48bb78;">🤖</span>';
+                    }
+                    tr.appendChild(tdAi);
+
+                    const tdArticleType = document.createElement('td');
+                    tdArticleType.textContent = item.article_type || '';
+                    tr.appendChild(tdArticleType);
+
+                    // Type
+                    const tdType = document.createElement('td');
+                    const typeMap = { 'single': '单项', 'list': '列表', 'list_item': '列表' };
+                    tdType.textContent = typeMap[item.source_type] || item.source_type;
+                    if (item.source_type === 'list_item') tdType.style.color = '#666';
+                    tr.appendChild(tdType);
+
+                    const tdName = document.createElement('td');
+                    tdName.textContent = item.project_name || '';
+                    tr.appendChild(tdName);
+
+                    const tdOverview = document.createElement('td');
+                    tdOverview.textContent = item.project_overview || '';
+                    tdOverview.title = item.project_overview || '';
+                    tdOverview.style.maxWidth = '200px';
+                    tdOverview.style.whiteSpace = 'nowrap';
+                    tdOverview.style.overflow = 'hidden';
+                    tdOverview.style.textOverflow = 'ellipsis';
+                    tr.appendChild(tdOverview);
+
+                    const tdNumerical = document.createElement('td');
+                    tdNumerical.innerHTML = (item.numerical_data || '').replace(/\n/g, '<br>');
+                    tdNumerical.style.fontSize = '11px';
+                    tdNumerical.style.lineHeight = '1.2';
+                    tr.appendChild(tdNumerical);
+
+                    const tdProgress = document.createElement('td');
+                    tdProgress.textContent = item.project_progress || '';
+                    tdProgress.title = item.project_progress || '';
+                    tdProgress.style.maxWidth = '150px';
+                    tdProgress.style.whiteSpace = 'nowrap';
+                    tdProgress.style.overflow = 'hidden';
+                    tdProgress.style.textOverflow = 'ellipsis';
+                    tr.appendChild(tdProgress);
+
+                    const tdStage = document.createElement('td');
+                    tdStage.textContent = item.stage || '';
+                    tr.appendChild(tdStage);
+
+                    const tdProv = document.createElement('td');
+                    tdProv.textContent = item.province || '';
+                    tr.appendChild(tdProv);
+
+                    const tdCity = document.createElement('td');
+                    tdCity.textContent = item.city || '';
+                    tr.appendChild(tdCity);
+
+
+
+                    const tdCap = document.createElement('td');
+                    tdCap.textContent = item.capacity_mw != null ? String(item.capacity_mw) : '';
+                    tr.appendChild(tdCap);
+
+                    const tdInv = document.createElement('td');
+                    tdInv.textContent = item.investment_cny != null ? String(item.investment_cny) : '';
+                    tr.appendChild(tdInv);
+
+                    const tdOwner = document.createElement('td');
+                    tdOwner.textContent = item.owner || '';
+                    tdOwner.title = item.owner || '';
+                    tdOwner.style.maxWidth = '150px';
+                    tdOwner.style.whiteSpace = 'nowrap';
+                    tdOwner.style.overflow = 'hidden';
+                    tdOwner.style.textOverflow = 'ellipsis';
+                    tr.appendChild(tdOwner);
+
+                    const tdDate = document.createElement('td');
+                    tdDate.textContent = item.published_at ? item.published_at.split(' ')[0] : '';
+                    tr.appendChild(tdDate);
+
+                    // Note (Editable)
+                    const tdNote = document.createElement('td');
+                    const noteInput = document.createElement('input');
+                    noteInput.type = 'text';
+                    noteInput.value = item.user_note || '';
+                    noteInput.style.width = '100%';
+                    noteInput.style.border = 'none';
+                    noteInput.style.background = 'transparent';
+                    noteInput.onchange = async (e) => {
+                        await fetch('/api/hydrogen/projects/classic/update_note', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id: item.id, note: e.target.value })
+                        });
+                    };
+                    tdNote.appendChild(noteInput);
+                    tr.appendChild(tdNote);
+
+                    const tdLink = document.createElement('td');
+                    if (item.url) {
+                        const a = document.createElement('a');
+                        a.href = item.url;
+                        a.target = '_blank';
+                        a.textContent = '打开';
+                        tdLink.appendChild(a);
+                    }
+                    tr.appendChild(tdLink);
+
+                    // Less important
+                    const tdH2Tpy = document.createElement('td'); tdH2Tpy.textContent = item.h2_output_tpy != null ? String(item.h2_output_tpy) : ''; tr.appendChild(tdH2Tpy);
+                    const tdH2Nm3 = document.createElement('td'); tdH2Nm3.textContent = item.h2_output_nm3_per_h != null ? String(item.h2_output_nm3_per_h) : ''; tr.appendChild(tdH2Nm3);
+                    const tdElec = document.createElement('td'); tdElec.textContent = item.electrolyzer_count != null ? String(item.electrolyzer_count) : ''; tr.appendChild(tdElec);
+                    const tdCo2 = document.createElement('td'); tdCo2.textContent = item.co2_reduction_tpy != null ? String(item.co2_reduction_tpy) : ''; tr.appendChild(tdCo2);
+                    const tdProduct = document.createElement('td'); tdProduct.textContent = item.product_category || ''; tr.appendChild(tdProduct);
+                    const tdEnergy = document.createElement('td'); tdEnergy.textContent = item.energy_type || ''; tr.appendChild(tdEnergy);
+                    const tdLocation = document.createElement('td'); tdLocation.textContent = item.location || ''; tr.appendChild(tdLocation);
+                    const tdEvent = document.createElement('td'); tdEvent.textContent = item.event_date || ''; tr.appendChild(tdEvent);
+                    const tdChannel = document.createElement('td'); tdChannel.textContent = item.channel_label || ''; tr.appendChild(tdChannel);
+                    const tdArticleTitle = document.createElement('td'); tdArticleTitle.textContent = item.article_title || ''; tdArticleTitle.title = item.article_title; tdArticleTitle.style.maxWidth = '150px'; tdArticleTitle.style.whiteSpace = 'nowrap'; tdArticleTitle.style.overflow = 'hidden'; tdArticleTitle.style.textOverflow = 'ellipsis'; tr.appendChild(tdArticleTitle);
+                    const tdQuality = document.createElement('td'); tdQuality.textContent = item.classic_quality || ''; tr.appendChild(tdQuality);
+
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                tbody.innerHTML = '<tr><td colspan="25" style="text-align:center; color:red;">加载失败</td></tr>';
+            }
+        }, 500);
+
+        function exportData() {
+            window.location.href = '/api/hydrogen/projects/classic/export';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initial load of projects
+            loadFullProjects();
+
+            // Load channels for filter dropdowns
+            fetch('/api/hydrogen/config')
+                .then(resp => resp.json())
+                .then(data => {
+                    fullChannels = (data.channels || []).map(ch => ({
+                        id: ch.id,
+                        label: ch.label
+                    }));
+                    const selectElements = [
+                        document.getElementById('full-channel-filter'), // Top filter
+                        document.getElementById('full-channel-filter-input') // Table filter
+                    ];
+
+                    selectElements.forEach(select => {
+                        if (!select) return;
+                        const current = select.value;
+                        while (select.options.length > 1) {
+                            select.remove(1);
+                        }
+                        fullChannels.forEach(ch => {
+                            const opt = document.createElement('option');
+                            opt.value = ch.label; // Use label for filtering, assuming API filters by label
+                            opt.textContent = ch.label;
+                            select.appendChild(opt);
+                        });
+                        if (current) select.value = current;
+                    });
+                })
+                .catch(err => {
+                    console.error('加载频道配置失败：', err);
+                });
+            // Attach listeners to all inputs
+            const inputs = document.querySelectorAll('.filter-input');
+            inputs.forEach(input => {
+                input.addEventListener('input', loadFullProjects);
+                input.addEventListener('change', loadFullProjects);
+            });
+
+            // Pagination Listeners
+            document.getElementById('full-prev').addEventListener('click', () => {
+                if (fullPage > 1) {
+                    fullPage--;
+                    loadFullProjects();
+                }
+            });
+            document.getElementById('full-next').addEventListener('click', () => {
+                if (fullPage < fullTotalPages) {
+                    fullPage++;
+                    loadFullProjects();
+                }
+            });
+            document.getElementById('full-reload').addEventListener('click', () => {
+                loadFullProjects();
+            });
+            document.getElementById('full-export').addEventListener('click', () => {
+                window.open('/api/hydrogen/projects/classic/export', '_blank');
+            });
+            document.getElementById('full-page-size').addEventListener('change', (e) => {
+                fullPageSize = parseInt(e.target.value) || 50;
+                fullPage = 1;
+                loadFullProjects();
+            });
+        });
+        // --- AI Settings & Extraction ---
+        let aiPollInterval = null;
+
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'block';
+            checkKeyStatus();
+            pollAIStatus();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+            if (aiPollInterval) {
+                clearInterval(aiPollInterval);
+                aiPollInterval = null;
+            }
+        }
+
+        window.onclick = function (event) {
+            if (event.target == document.getElementById('settingsModal')) {
+                closeSettings();
+            }
+        }
+
+        function checkKeyStatus() {
+            fetch('/api/config/siliconflow')
+                .then(res => res.json())
+                .then(data => {
+                    const statusEl = document.getElementById('keyStatus');
+                    if (data.has_key) {
+                        statusEl.textContent = `当前已配置 Key: ${data.key_masked}`;
+                        statusEl.style.color = 'green';
+                    } else {
+                        statusEl.textContent = '未配置 Key';
+                        statusEl.style.color = '#666';
+                    }
+                });
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (!key) return;
+
+            fetch('/api/config/siliconflow', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api_key: key })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.ok) {
+                        alert('API Key 已保存');
+                        document.getElementById('apiKeyInput').value = '';
+                        checkKeyStatus();
+                    } else {
+                        alert('保存失败: ' + data.message);
+                    }
+                });
+        }
+
+        function deleteApiKey() {
+            if (!confirm('确定要删除 API Key 吗？')) return;
+
+            fetch('/api/config/siliconflow', { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.ok) {
+                        alert('API Key 已删除');
+                        checkKeyStatus();
+                    }
+                });
+        }
+
+        function runAIExtraction() {
+            const max = document.getElementById('aiMaxProjects').value;
+            const workers = document.getElementById('aiMaxWorkers').value;
+            fetch('/api/hydrogen/projects/ai/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ max_projects: max, max_workers: workers })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.ok) {
+                        document.getElementById('aiStatus').style.display = 'block';
+                        pollAIStatus();
+                    } else {
+                        alert('启动失败: ' + data.message);
+                    }
+                });
+        }
+
+        function pollAIStatus() {
+            if (aiPollInterval) clearInterval(aiPollInterval);
+
+            aiPollInterval = setInterval(() => {
+                fetch('/api/hydrogen/projects/ai/status')
+                    .then(res => res.json())
+                    .then(data => {
+                        const statusDiv = document.getElementById('aiStatus');
+                        if (data.stage === 'idle' && data.total === 0) {
+                            statusDiv.style.display = 'none';
+                            return;
+                        }
+
+                        statusDiv.style.display = 'block';
+                        document.getElementById('aiStage').textContent = data.stage;
+                        document.getElementById('aiProgress').textContent = `${data.current} / ${data.total}`;
+                        document.getElementById('aiMessage').textContent = data.message;
+
+                        if (data.stage === 'idle' && data.total > 0) {
+                            // Finished
+                            setTimeout(() => {
+                                loadFullProjects(); // Refresh table
+                            }, 1000);
+                        }
+                    });
+            }, 1000);
+        }
+
+        // Auto-open settings if requested
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('open_settings') === 'true') {
+            openSettings();
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CAPTCHA Solver</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        h1 {
+            color: #333;
+        }
+        #captcha-image {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin: 20px 0;
+            background-color: #fff;
+        }
+        #captcha-input {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 200px;
+        }
+        #submit-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        #submit-btn:hover {
+            background-color: #45a049;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CAPTCHA Solver</h1>
+        <p>Please enter the CAPTCHA code below:</p>
+        
+        <img id="captcha-image" alt="CAPTCHA Image">
+        <br>
+        
+        <input type="text" id="captcha-input" placeholder="Enter CAPTCHA code" autocomplete="off">
+        <br>
+        
+        <button id="submit-btn" onclick="submitCaptcha()">Submit</button>
+        
+        <div id="status"></div>
+    </div>
+
+    <script>
+        // Load the CAPTCHA image when the page loads
+        window.onload = function() {
+            pollCaptcha();
+            setInterval(pollCaptcha, 1000);
+        };
+        
+        function pollCaptcha() {
+            fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.captcha_submitted) {
+                    document.getElementById('captcha-image').style.display = 'none';
+                } else {
+                    fetch('/captcha-image?' + Date.now())
+                    .then(resp => resp.blob())
+                    .then(blob => {
+                        if (blob.size > 0) {
+                            document.getElementById('captcha-image').style.display = 'inline-block';
+                            document.getElementById('captcha-image').src = URL.createObjectURL(blob);
+                        } else {
+                            document.getElementById('captcha-image').style.display = 'none';
+                        }
+                    });
+                }
+            });
+        }
+        
+        function submitCaptcha() {
+            const captchaCode = document.getElementById('captcha-input').value;
+            const statusDiv = document.getElementById('status');
+            
+            if (!captchaCode.trim()) {
+                statusDiv.innerHTML = '<div class="error">Please enter the CAPTCHA code</div>';
+                return;
+            }
+            
+            fetch('/submit-captcha', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // CaptchaManager expects JSON with {"code": "..."}
+                body: JSON.stringify({code: captchaCode})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.ok) {
+                    statusDiv.innerHTML = '<div class="success">CAPTCHA submitted successfully!</div>';
+                    document.getElementById('captcha-input').value = '';
+                } else {
+                    statusDiv.innerHTML = '<div class="error">Error: ' + (data.message || 'Unknown error') + '</div>';
+                }
+            })
+            .catch(error => {
+                statusDiv.innerHTML = '<div class="error">Error submitting CAPTCHA: ' + error.message + '</div>';
+            });
+        }
+        
+        // Allow submitting with Enter key
+        document.getElementById('captcha-input').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                submitCaptcha();
+            }
+        });
+        
+        // Periodically check if a new CAPTCHA is available
+        setInterval(function() {
+            fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.captcha_submitted) {
+                    // Refresh the CAPTCHA image if it might have expired
+                    refreshCaptcha();
+                }
+            });
+        }, 30000); // Check every 30 seconds
+    </script>
+</body>
+</html>

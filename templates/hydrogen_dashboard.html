@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>氢能项目数据库 - 北极星项目看板</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        header {
+            background: #2b6cb0;
+            color: #fff;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        header nav {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        header nav a {
+            color: #fff;
+            text-decoration: none;
+            margin-left: 20px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        header nav a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        header nav a.active {
+            font-weight: bold;
+            opacity: 1;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 24px auto;
+            padding: 0 16px;
+        }
+
+        section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 16px 20px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        section h2 {
+            margin: 0 0 8px;
+            font-size: 18px;
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        section p.desc {
+            margin: 4px 0 12px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .form-row label {
+            white-space: nowrap;
+        }
+
+        .form-row input[type="number"],
+        .form-row input[type="text"] {
+            padding: 4px 6px;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            min-width: 60px;
+        }
+
+        .form-row input[type="checkbox"] {
+            margin-right: 4px;
+        }
+
+        button {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid #2b6cb0;
+            background: #2b6cb0;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        button.secondary {
+            background: #fff;
+            color: #2b6cb0;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        .status-line {
+            font-size: 13px;
+            margin-top: 8px;
+            color: #444;
+        }
+
+        .status-line strong {
+            color: #2b6cb0;
+        }
+
+        .filter-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 2px 4px;
+            font-size: 11px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        th,
+        td {
+            border: 1px solid #e2e8f0;
+            padding: 4px 6px;
+            text-align: left;
+        }
+
+        th {
+            background: #edf2f7;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f7fafc;
+        }
+
+        tbody tr:hover {
+            background: #e6fffa;
+        }
+
+        .table-scroll {
+            max-height: 500px;
+            overflow: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: #fff;
+            margin-top: 4px;
+        }
+
+        .section-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>氢能项目数据库</h1>
+        <nav>
+            <a href="/" class="active">北极星项目看板</a>
+            <a href="/collector">内蒙古政府项目看板</a>
+        </nav>
+    </header>
+    <main>
+        <section>
+            <h2>氢能站点监控 <span id="hydrogen-status-text"
+                    style="font-size: 14px; font-weight: normal; color: #666;"></span></h2>
+            <p class="desc" id="hydrogen-status-detail">...</p>
+            <div class="form-row">
+                <div id="hydrogen-channel-list" style="display: flex; gap: 12px; flex-wrap: wrap;"></div>
+            </div>
+            <div class="form-row">
+                <button type="button" id="hydrogen-start-btn" onclick="startHydrogenMonitor()">启动监控</button>
+                <button type="button" class="secondary" onclick="resetHydrogenArticles()" style="color: #c53030; border-color: #c53030;">清空数据</button>
+                <label>最大新文章：<input type="number" id="hydrogen-max-new" value="1000" style="width: 60px;"></label>
+                <label>最大页数：<input type="number" id="hydrogen-max-pages" value="10" style="width: 60px;"></label>
+            </div>
+            <div class="form-row" style="margin-top: 12px; border-top: 1px dashed #eee; padding-top: 8px;">
+                <label>筛选频道：<select id="hydrogen-article-channel"
+                        onchange="hydrogenArticlePage=1;loadHydrogenArticles()">
+                        <option value="">全部</option>
+                    </select></label>
+                <label>每页条数：<input type="number" id="hydrogen-article-page-size" value="20" style="width: 50px;"
+                        onchange="loadHydrogenArticles()"></label>
+                <span id="hydrogen-article-summary" style="color: #666; margin-left: auto;"></span>
+            </div>
+            <div class="table-scroll">
+                <table id="hydrogen-article-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 140px;">发布时间</th>
+                            <th style="width: 120px;">频道</th>
+                            <th>标题</th>
+                            <th style="width: 60px;">链接</th>
+                        </tr>
+                        <tr class="filter-row">
+                            <th><input type="date" id="hydrogen-filter-date-from" class="filter-input"><br><input
+                                    type="date" id="hydrogen-filter-date-to" class="filter-input"></th>
+                            <th><input type="text" id="hydrogen-filter-channel" class="filter-input"
+                                    placeholder="包含..."></th>
+                            <th><input type="text" id="hydrogen-filter-title" class="filter-input" placeholder="包含...">
+                            </th>
+                            <th><input type="text" id="hydrogen-filter-link" class="filter-input" placeholder="包含...">
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="hydrogen-article-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section>
+            <div class="section-header-row">
+                <h2>氢能项目（经典规则） <span id="classic-status-text"
+                        style="font-size: 14px; font-weight: normal; color: #666;"></span></h2>
+            </div>
+            <p class="desc" id="classic-summary">...</p>
+            <div class="form-row">
+                <button type="button" id="classic-start-btn" onclick="startClassicExtractor()">启动提取</button>
+                <button type="button" class="secondary" onclick="loadClassicProjects()">刷新列表</button>
+                <button type="button" class="secondary" onclick="resetClassicProjects()" style="color: #c53030; border-color: #c53030;">清空数据</button>
+                <button type="button" class="secondary" onclick="window.open('/classic-projects', '_blank')">全字段视图</button>
+                <label>最大文章：<input type="number" id="classic-max-articles" value="0" placeholder="0=不限"
+                        style="width: 60px;"></label>
+                <label>分数阈值：<input type="number" id="classic-score-threshold" value="2" style="width: 50px;"></label>
+                <label>并发数：<input type="number" id="classic-max-workers" value="5" style="width: 50px;"></label>
+                <label><input type="checkbox" id="classic-show-browser">显示浏览器</label>
+            </div>
+            <div class="form-row" style="margin-top: 12px; border-top: 1px dashed #eee; padding-top: 8px;">
+                <label>筛选频道：<select id="classic-channel-filter" onchange="classicPage=1;loadClassicProjects()">
+                        <option value="">全部</option>
+                    </select></label>
+                <label>筛选质量：<select id="classic-quality-filter" onchange="classicPage=1;loadClassicProjects()">
+                        <option value="">全部</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                    </select></label>
+                <label>每页条数：<input type="number" id="classic-page-size" value="20" style="width: 50px;"
+                        onchange="loadClassicProjects()"></label>
+            </div>
+            <div class="table-scroll">
+                <table id="classic-project-table">
+                    <thead>
+                        <tr>
+                            <th>发布日期</th>
+                            <th>频道</th>
+                            <th>项目名称</th>
+                            <th>阶段</th>
+                            <th>容量(MW)</th>
+                            <th>投资(元)</th>
+                            <th>质量</th>
+                            <th>链接</th>
+                        </tr>
+                        <tr class="filter-row classic-filter-row">
+                            <th><input type="date" id="classic-filter-date-from" class="filter-input"><br><input
+                                    type="date" id="classic-filter-date-to" class="filter-input"></th>
+                            <th><input type="text" id="classic-filter-channel" class="filter-input" placeholder="包含...">
+                            </th>
+                            <th><input type="text" id="classic-filter-name" class="filter-input" placeholder="名称包含...">
+                            </th>
+                            <th><input type="text" id="classic-filter-stage" class="filter-input" placeholder="阶段包含...">
+                            </th>
+                            <th><input type="number" id="classic-filter-capacity-min" class="filter-input"
+                                    placeholder="≥"><br><input type="number" id="classic-filter-capacity-max"
+                                    class="filter-input" placeholder="≤"></th>
+                            <th><input type="number" id="classic-filter-investment-min" class="filter-input"
+                                    placeholder="≥"><br><input type="number" id="classic-filter-investment-max"
+                                    class="filter-input" placeholder="≤"></th>
+                            <th><input type="text" id="classic-filter-quality" class="filter-input" placeholder="A/B/C">
+                            </th>
+                            <th><input type="text" id="classic-filter-link" class="filter-input" placeholder="链接包含...">
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="classic-project-tbody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section>
+            <h2>氢能项目（AI 增强提取） <span id="ai-status-text" style="font-size: 14px; font-weight: normal; color: #666;"></span></h2>
+            <p class="desc">配置 SiliconFlow API Key，利用大模型对提取结果进行增强和修正。</p>
+            <div class="form-row">
+                 <label>API Key: <input type="password" id="ai-api-key" placeholder="sk-..." style="width: 200px;"></label>
+                 <button type="button" class="secondary" onclick="saveAiConfig()">保存 Key</button>
+                 <button type="button" class="secondary" onclick="clearAiConfig()" style="color: #c53030;">删除 Key</button>
+            </div>
+            <div class="form-row">
+                 <label>Model: <input type="text" id="ai-model" placeholder="deepseek-ai/DeepSeek-V3" style="width: 200px;"></label>
+                 <button type="button" class="secondary" onclick="saveAiModel()">保存 Model</button>
+                 <button type="button" class="secondary" onclick="resetAiModel()">重置 Model</button>
+            </div>
+            <div class="form-row" style="margin-top: 8px;">
+                <button type="button" id="ai-start-btn" onclick="startAiExtractor()">启动 AI 提取</button>
+                <button type="button" class="secondary" onclick="window.open('/classic-projects', '_blank')">全字段视图</button>
+                <button type="button" class="secondary" onclick="window.open('/api/hydrogen/projects/classic/export', '_blank')">导出 CSV</button>
+                <label>最大项目数：<input type="number" id="ai-max-projects" value="10" style="width: 60px;"></label>
+                <label>并发数：<input type="number" id="ai-max-workers" value="5" style="width: 50px;"></label>
+            </div>
+        </section>
+    </main>
+    <script>
+        let hydrogenChannels = [];
+        let hydrogenArticlePage = 1;
+        let hydrogenArticleTotalPages = 1;
+        let hydrogenArticlePageSize = 20;
+        let classicPage = 1;
+        let classicTotalPages = 1;
+        let classicPageSize = 20;
+        let lastHydrogenStage = null;
+        let lastClassicStage = null;
+        let lastAiStage = null;
+
+        function loadHydrogenConfig() {
+            fetch('/api/hydrogen/config').then(resp => resp.json()).then(data => {
+                hydrogenChannels = (data.channels || []).map(ch => ({
+                    id: ch.id,
+                    label: ch.label,
+                    path: ch.path,
+                    content_type: ch.content_type,
+                    enabled: !!ch.enabled
+                }));
+                renderHydrogenChannels();
+            }).catch(err => {
+                console.error('加载氢能频道配置失败：', err);
+            });
+        }
+        
+        function loadAiConfig() {
+            fetch('/api/config/siliconflow').then(resp => resp.json()).then(data => {
+                const input = document.getElementById('ai-api-key');
+                if (data.key_masked) {
+                    input.placeholder = "已配置: " + data.key_masked;
+                    input.value = ""; 
+                } else {
+                    input.placeholder = "sk-...";
+                }
+                const modelInput = document.getElementById('ai-model');
+                if (modelInput) {
+                    modelInput.value = data.model || 'deepseek-ai/DeepSeek-V3';
+                }
+            });
+        }
+        
+        function saveAiConfig() {
+            const input = document.getElementById('ai-api-key');
+            const key = (input.value || '').trim();
+            if (!key) {
+                alert("请输入 API Key");
+                return;
+            }
+            fetch('/api/config/siliconflow', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({api_key: key})
+            }).then(resp => resp.json()).then(data => {
+                if (data.ok) {
+                    alert("API Key 已保存");
+                    loadAiConfig();
+                } else {
+                    alert("保存失败: " + data.message);
+                }
+            });
+        }
+
+        function saveAiModel() {
+            const input = document.getElementById('ai-model');
+            const model = (input.value || '').trim();
+            if (!model) {
+                alert("请输入模型名称");
+                return;
+            }
+            fetch('/api/config/siliconflow', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({model: model})
+            }).then(resp => resp.json()).then(data => {
+                if (data.ok) {
+                    alert("模型配置已保存");
+                    loadAiConfig();
+                } else {
+                    alert("保存失败: " + data.message);
+                }
+            });
+        }
+
+        function resetAiModel() {
+            const defaultModel = 'deepseek-ai/DeepSeek-V3';
+            if (!confirm(`确定要重置模型为默认值 (${defaultModel}) 吗？`)) return;
+            fetch('/api/config/siliconflow', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({model: defaultModel})
+            }).then(resp => resp.json()).then(data => {
+                if (data.ok) {
+                    alert("模型已重置");
+                    loadAiConfig();
+                }
+            });
+        }
+        
+        function clearAiConfig() {
+            if (!confirm("确定要删除 API Key 吗？")) return;
+            fetch('/api/config/siliconflow', {
+                method: 'DELETE'
+            }).then(resp => resp.json()).then(data => {
+                if (data.ok) {
+                    alert("API Key 已删除");
+                    loadAiConfig();
+                }
+            });
+        }
+        
+        function startAiExtractor() {
+            const btn = document.getElementById('ai-start-btn');
+            if (btn) btn.disabled = true;
+            lastAiStage = 'running'; // Force state
+            const maxProj = parseInt(document.getElementById('ai-max-projects').value || '10', 10);
+            const maxWork = parseInt(document.getElementById('ai-max-workers').value || '5', 10);
+            
+            fetch('/api/hydrogen/projects/ai/run', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    max_projects: maxProj,
+                    max_workers: maxWork
+                })
+            }).then(resp => {
+                 if (!resp.ok) {
+                    if (btn) btn.disabled = false;
+                    return resp.json().then(j => { throw new Error(j.message || '启动失败'); });
+                }
+            }).catch(err => {
+                if (btn) btn.disabled = false;
+                alert('启动 AI 提取失败: ' + err.message);
+            });
+        }
+        
+        function pollAiStatus() {
+            fetch('/api/hydrogen/projects/ai/status').then(resp => resp.json()).then(data => {
+                const stage = data.stage || 'idle';
+                let msg = data.message || '';
+                if (!msg) msg = stage === 'running' ? '运行中' : '待机';
+                if (data.total > 0) {
+                    msg += ` (${data.current} / ${data.total})`;
+                }
+                const el = document.getElementById('ai-status-text');
+                if (el) el.textContent = msg;
+                
+                // Auto-update button state
+                const btn = document.getElementById('ai-start-btn');
+                if (btn) {
+                    btn.disabled = (stage === 'running');
+                }
+
+                if (lastAiStage === 'running' && stage === 'idle') {
+                    loadClassicProjects(); // Reload table to show AI improvements
+                }
+                lastAiStage = stage;
+            });
+        }
+        
+        function resetClassicProjects() {
+            if (!confirm("确定要清空经典规则提取的项目数据吗？此操作不可恢复。")) return;
+            fetch('/api/hydrogen/projects/classic/reset', {method: 'POST'})
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.ok) {
+                        alert("数据已清空");
+                        loadClassicProjects();
+                    } else {
+                        alert("清空失败: " + data.error);
+                    }
+                });
+        }
+
+        function resetHydrogenArticles() {
+            if (!confirm("确定要清空所有氢能文章记录吗？此操作不可恢复。")) return;
+            fetch('/api/hydrogen/articles/reset', {method: 'POST'})
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.ok) {
+                        alert("文章数据已清空");
+                        hydrogenArticlePage = 1;
+                        loadHydrogenArticles();
+                    } else {
+                        alert("清空失败: " + (data.error || data.message));
+                    }
+                }).catch(err => {
+                    alert("请求失败: " + err);
+                });
+        }
+
+        function renderHydrogenChannels() {
+            const container = document.getElementById('hydrogen-channel-list');
+            if (!container) return;
+            container.innerHTML = '';
+            hydrogenChannels.forEach(ch => {
+                const label = document.createElement('label');
+                label.style.marginRight = '12px';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = !!ch.enabled;
+                cb.addEventListener('change', () => {
+                    ch.enabled = cb.checked;
+                    saveHydrogenConfig();
+                });
+                label.appendChild(cb);
+                const text = document.createTextNode(` ${ch.label} (${ch.content_type})`);
+                label.appendChild(text);
+                container.appendChild(label);
+            });
+            const select = document.getElementById('hydrogen-article-channel');
+            if (select) {
+                const current = select.value;
+                while (select.options.length > 1) {
+                    select.remove(1);
+                }
+                hydrogenChannels.forEach(ch => {
+                    const opt = document.createElement('option');
+                    opt.value = ch.id;
+                    opt.textContent = ch.label;
+                    select.appendChild(opt);
+                });
+                if (current) {
+                    select.value = current;
+                }
+            }
+            const classicSelect = document.getElementById('classic-channel-filter');
+            if (classicSelect) {
+                const currentClassic = classicSelect.value;
+                while (classicSelect.options.length > 1) {
+                    classicSelect.remove(1);
+                }
+                hydrogenChannels.forEach(ch => {
+                    const opt = document.createElement('option');
+                    opt.value = ch.id;
+                    opt.textContent = ch.label;
+                    classicSelect.appendChild(opt);
+                });
+                if (currentClassic) {
+                    classicSelect.value = currentClassic;
+                }
+            }
+        }
+
+        function saveHydrogenConfig() {
+            const payload = {
+                channels: hydrogenChannels.map(ch => ({
+                    id: ch.id,
+                    enabled: ch.enabled
+                }))
+            };
+            fetch('/api/hydrogen/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            }).catch(err => {
+                console.error('保存氢能频道配置失败：', err);
+            });
+        }
+
+        function startHydrogenMonitor() {
+            const btn = document.getElementById('hydrogen-start-btn');
+            if (btn) {
+                btn.disabled = true;
+            }
+            const maxNew = parseInt(document.getElementById('hydrogen-max-new').value || '0', 10);
+            const maxPages = parseInt(document.getElementById('hydrogen-max-pages').value || '0', 10);
+            const payload = {
+                max_new_articles: maxNew > 0 ? maxNew : null,
+                max_pages_per_channel: maxPages > 0 ? maxPages : null
+            };
+            fetch('/api/hydrogen/start', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            }).then(resp => {
+                if (!resp.ok) {
+                    // If 409 (Already running), we keep disabled and let poller handle it.
+                    return resp.json().then(j => {
+                        throw new Error(j.message || '启动失败');
+                    });
+                }
+            }).catch(err => {
+                let msg = err.message || '未知错误';
+                if (msg.includes('已有氢能监控任务运行中')) {
+                    console.log('Task already running, suppressing alert.');
+                    return; // Do not alert, do not re-enable (poller will handle)
+                }
+                
+                if (btn) btn.disabled = false;
+                if (msg === 'Failed to fetch') {
+                    msg = '无法连接到后端接口，请确认 app.py 正在运行，并通过 http://127.0.0.1:8000 访问本页面。';
+                }
+                alert('启动氢能监控失败：' + msg);
+            });
+        }
+
+        function loadHydrogenArticles() {
+            const pageSizeInput = document.getElementById('hydrogen-article-page-size');
+            if (pageSizeInput) {
+                const val = parseInt(pageSizeInput.value || '0', 10);
+                if (val > 0) {
+                    hydrogenArticlePageSize = val;
+                } else {
+                    hydrogenArticlePageSize = 20;
+                    pageSizeInput.value = '20';
+                }
+            }
+            const channelSelect = document.getElementById('hydrogen-article-channel');
+            const channelId = channelSelect ? (channelSelect.value || '') : '';
+            const payload = {
+                page: hydrogenArticlePage,
+                page_size: hydrogenArticlePageSize,
+                channel_ids: channelId ? [channelId] : null
+            };
+            fetch('/api/hydrogen/articles', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            }).then(resp => resp.json()).then(data => {
+                const total = data.total || 0;
+                const items = data.items || [];
+                hydrogenArticleTotalPages = total > 0 ? Math.ceil(total / hydrogenArticlePageSize) : 1;
+                if (hydrogenArticlePage > hydrogenArticleTotalPages) {
+                    hydrogenArticlePage = hydrogenArticleTotalPages;
+                }
+                const summary = document.getElementById('hydrogen-article-summary');
+                if (summary) {
+                    summary.textContent = `氢能文章记录：${total} 条，页 ${hydrogenArticlePage} / ${hydrogenArticleTotalPages} 。`;
+                }
+                const tbody = document.getElementById('hydrogen-article-tbody');
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    items.forEach(item => {
+                        const tr = document.createElement('tr');
+                        const tdDate = document.createElement('td');
+                        tdDate.textContent = item.published_at || '';
+                        const tdChannel = document.createElement('td');
+                        tdChannel.textContent = item.channel_label || item.channel_id || '';
+                        const tdTitle = document.createElement('td');
+                        tdTitle.textContent = item.title || '';
+                        const tdLink = document.createElement('td');
+                        if (item.url) {
+                            const a = document.createElement('a');
+                            a.href = item.url;
+                            a.textContent = '打开';
+                            a.target = '_blank';
+                            tdLink.appendChild(a);
+                        }
+                        tr.appendChild(tdDate);
+                        tr.appendChild(tdChannel);
+                        tr.appendChild(tdTitle);
+                        tr.appendChild(tdLink);
+                        tbody.appendChild(tr);
+                    });
+                }
+                filterHydrogenArticleRows();
+            }).catch(err => {
+                console.error('加载氢能文章记录失败：', err);
+            });
+        }
+
+        function pollHydrogenStatus() {
+            fetch('/api/hydrogen/status').then(resp => resp.json()).then(data => {
+                const stage = data.stage || 'idle';
+                let msg = data.message || '';
+                if (!msg) {
+                    msg = stage === 'running' ? '运行中' : '待机';
+                }
+                
+                // Disable/Enable start button based on stage
+                const btn = document.getElementById('hydrogen-start-btn');
+                if (btn) {
+                    btn.disabled = (stage === 'running');
+                }
+
+                const current = typeof data.current === 'number' ? data.current : 0;
+                const total = typeof data.total === 'number' ? data.total : 0;
+                if (total > 0) {
+                    msg += `（${current} /${total} ）`;
+                }
+                const statusText = document.getElementById('hydrogen-status-text');
+                if (statusText) {
+                    statusText.textContent = msg;
+                }
+                const label = data.channel_label || '—';
+                const page = data.page || 0;
+                const newInPage = data.new_in_page || 0;
+                const newInRun = data.new_in_run || 0;
+                const totalInDb = data.total_in_db || 0;
+                const detail = document.getElementById('hydrogen-status-detail');
+                if (detail) {
+                    detail.textContent = `当前频道：${label} ，页：${page} ，本页新文章：${newInPage} ，本轮累计新文章：${newInRun} ，数据库总记录：${totalInDb} 。`;
+                }
+                if (lastHydrogenStage === 'running' && stage === 'idle') {
+                    hydrogenArticlePage = 1;
+                    loadHydrogenArticles();
+                }
+                lastHydrogenStage = stage;
+            }).catch(err => {
+                console.error('获取氢能监控状态失败：', err);
+            });
+        }
+
+        function startClassicExtractor() {
+            const btn = document.getElementById('classic-start-btn');
+            if (btn) btn.disabled = true;
+            lastClassicStage = 'running'; // Force state
+            const maxArticlesVal = parseInt(document.getElementById('classic-max-articles').value || '0', 10);
+            const scoreThresholdVal = parseInt(document.getElementById('classic-score-threshold').value || '2', 10);
+            const maxWorkersVal = parseInt(document.getElementById('classic-max-workers').value || '10', 10);
+            const showBrowserEl = document.getElementById('classic-show-browser');
+            const showBrowser = showBrowserEl ? showBrowserEl.checked : false;
+            const payload = {
+                max_articles: maxArticlesVal > 0 ? maxArticlesVal : null,
+                score_threshold: scoreThresholdVal > 0 ? scoreThresholdVal : 2,
+                max_workers: maxWorkersVal > 0 ? maxWorkersVal : 10,
+                headless: !showBrowser
+            };
+            fetch('/api/hydrogen/projects/classic/run', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            }).then(resp => {
+                if (!resp.ok) {
+                    if (btn) btn.disabled = false;
+                    return resp.json().then(j => {
+                        throw new Error(j.message || '启动失败');
+                    });
+                }
+            }).catch(err => {
+                if (btn) btn.disabled = false;
+                let msg = err.message || '未知错误';
+                if (msg === 'Failed to fetch') {
+                    msg = '无法连接到后端接口，请确认 app.py 正在运行，并通过 http://127.0.0.1:8000 访问本页面。';
+                }
+                alert('启动经典项目提取失败：' + msg);
+            });
+        }
+
+        function pollClassicStatus() {
+            fetch('/api/hydrogen/projects/classic/status').then(resp => resp.json()).then(data => {
+                const stage = data.stage || 'idle';
+                let msg = data.message || '';
+                if (!msg) {
+                    msg = stage === 'running' ? '运行中' : '待机';
+                }
+                
+                // Auto-update button state
+                const btn = document.getElementById('classic-start-btn');
+                if (btn) {
+                    btn.disabled = (stage === 'running');
+                }
+
+                const current = typeof data.current === 'number' ? data.current : 0;
+                const total = typeof data.total === 'number' ? data.total : 0;
+                if (total > 0) {
+                    msg += `（${current} /${total} ）`;
+                }
+                const el = document.getElementById('classic-status-text');
+                if (el) {
+                    let displayMsg = msg;
+                    // Highlight "北极星内容源错误" in red
+                    if (msg.includes('北极星内容源错误')) {
+                        displayMsg = displayMsg.replace(/\(北极星内容源错误: (\d+)\)/, '<span style="color: #e53e3e; font-weight: bold;">(北极星内容源错误: $1)</span>');
+                    }
+                    
+                    // Append error link if available
+                    if (data.last_error_url) {
+                        displayMsg += ` <a href="${data.last_error_url}" target="_blank" style="color: #2b6cb0; text-decoration: underline; font-size: 12px; margin-left: 8px;">[点击查看示例错误页面]</a>`;
+                    }
+                    
+                    el.innerHTML = displayMsg;
+                }
+                if (lastClassicStage === 'running' && stage === 'idle') {
+                    classicPage = 1;
+                    loadClassicProjects();
+                }
+                lastClassicStage = stage;
+            }).catch(err => {
+                console.error('获取经典提取状态失败：', err);
+            });
+        }
+
+        function loadClassicProjects() {
+            const sizeInput = document.getElementById('classic-page-size');
+            if (sizeInput) {
+                const v = parseInt(sizeInput.value || '0', 10);
+                if (v > 0) {
+                    classicPageSize = v;
+                } else {
+                    classicPageSize = 20;
+                    sizeInput.value = '20';
+                }
+            }
+            const channelSelect = document.getElementById('classic-channel-filter');
+            const qualitySelect = document.getElementById('classic-quality-filter');
+            const channelId = channelSelect ? (channelSelect.value || '') : '';
+            const quality = qualitySelect ? (qualitySelect.value || '') : '';
+            const payload = {
+                page: classicPage,
+                page_size: classicPageSize,
+                channel_ids: channelId ? [channelId] : null,
+                classic_quality: quality || null
+            };
+            fetch('/api/hydrogen/projects/classic/list', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            }).then(resp => resp.json()).then(data => {
+                const total = data.total || 0;
+                const items = data.items || [];
+                classicTotalPages = total > 0 ? Math.ceil(total / classicPageSize) : 1;
+                if (classicPage > classicTotalPages) classicPage = classicTotalPages;
+                const summary = document.getElementById('classic-summary');
+                if (summary) {
+                    summary.textContent = `经典项目记录：${total} 条，页 ${classicPage} / ${classicTotalPages} 。`;
+                }
+                const tbody = document.getElementById('classic-project-tbody');
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    items.forEach(item => {
+                        const tr = document.createElement('tr');
+                        const tdDate = document.createElement('td');
+                        tdDate.textContent = item.published_at || '';
+                        const tdChannel = document.createElement('td');
+                        tdChannel.textContent = item.channel_label || item.channel_id || '';
+                        const tdName = document.createElement('td');
+                        tdName.textContent = item.project_name || '';
+                        const tdStage = document.createElement('td');
+                        tdStage.textContent = item.stage || '';
+                        const tdCap = document.createElement('td');
+                        tdCap.textContent = item.capacity_mw != null ? String(item.capacity_mw) : '';
+                        const tdInv = document.createElement('td');
+                        tdInv.textContent = item.investment_cny != null ? String(item.investment_cny) : '';
+                        const tdQ = document.createElement('td');
+                        tdQ.textContent = item.classic_quality || '';
+                        const tdLink = document.createElement('td');
+                        if (item.url) {
+                            const a = document.createElement('a');
+                            a.href = item.url;
+                            a.textContent = '打开';
+                            a.target = '_blank';
+                            tdLink.appendChild(a);
+                        }
+                        tr.appendChild(tdDate);
+                        tr.appendChild(tdChannel);
+                        tr.appendChild(tdName);
+                        tr.appendChild(tdStage);
+                        tr.appendChild(tdCap);
+                        tr.appendChild(tdInv);
+                        tr.appendChild(tdQ);
+                        tr.appendChild(tdLink);
+                        tbody.appendChild(tr);
+                    });
+                }
+                filterClassicProjectRows();
+            }).catch(err => {
+                console.error('加载经典项目记录失败：', err);
+            });
+        }
+
+        function filterHydrogenArticleRows() {
+            const tbody = document.getElementById('hydrogen-article-tbody');
+            if (!tbody) return;
+            const fromInput = document.getElementById('hydrogen-filter-date-from');
+            const toInput = document.getElementById('hydrogen-filter-date-to');
+            const chInput = document.getElementById('hydrogen-filter-channel');
+            const titleInput = document.getElementById('hydrogen-filter-title');
+            const linkInput = document.getElementById('hydrogen-filter-link');
+            const fromVal = fromInput && fromInput.value ? fromInput.value : '';
+            const toVal = toInput && toInput.value ? toInput.value : '';
+            const chVal = chInput && chInput.value ? chInput.value.trim().toLowerCase() : '';
+            const titleVal = titleInput && titleInput.value ? titleInput.value.trim().toLowerCase() : '';
+            const linkVal = linkInput && linkInput.value ? linkInput.value.trim().toLowerCase() : '';
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length < 4) {
+                    row.style.display = '';
+                    return;
+                }
+                const dateText = (cells[0].textContent || '').trim();
+                const channelText = (cells[1].textContent || '').trim().toLowerCase();
+                const titleText = (cells[2].textContent || '').trim().toLowerCase();
+                const linkAnchor = cells[3].querySelector('a');
+                const linkText = linkAnchor ? (linkAnchor.href || '').toLowerCase() : (cells[3].textContent || '').trim().toLowerCase();
+                let visible = true;
+                const dateVal = dateText ? dateText.slice(0, 10) : '';
+                if (fromVal && dateVal && dateVal < fromVal) visible = false;
+                if (toVal && dateVal && dateVal > toVal) visible = false;
+                if (chVal && !channelText.includes(chVal)) visible = false;
+                if (titleVal && !titleText.includes(titleVal)) visible = false;
+                if (linkVal && !linkText.includes(linkVal)) visible = false;
+                row.style.display = visible ? '' : 'none';
+            });
+        }
+
+        function filterClassicProjectRows() {
+            const tbody = document.getElementById('classic-project-tbody');
+            if (!tbody) return;
+            const fromInput = document.getElementById('classic-filter-date-from');
+            const toInput = document.getElementById('classic-filter-date-to');
+            const chInput = document.getElementById('classic-filter-channel');
+            const nameInput = document.getElementById('classic-filter-name');
+            const stageInput = document.getElementById('classic-filter-stage');
+            const capMinInput = document.getElementById('classic-filter-capacity-min');
+            const capMaxInput = document.getElementById('classic-filter-capacity-max');
+            const invMinInput = document.getElementById('classic-filter-investment-min');
+            const invMaxInput = document.getElementById('classic-filter-investment-max');
+            const qualityInput = document.getElementById('classic-filter-quality');
+            const linkInput = document.getElementById('classic-filter-link');
+            const fromVal = fromInput && fromInput.value ? fromInput.value : '';
+            const toVal = toInput && toInput.value ? toInput.value : '';
+            const chVal = chInput && chInput.value ? chInput.value.trim().toLowerCase() : '';
+            const nameVal = nameInput && nameInput.value ? nameInput.value.trim().toLowerCase() : '';
+            const stageVal = stageInput && stageInput.value ? stageInput.value.trim().toLowerCase() : '';
+            const capMin = capMinInput && capMinInput.value ? parseFloat(capMinInput.value) : null;
+            const capMax = capMaxInput && capMaxInput.value ? parseFloat(capMaxInput.value) : null;
+            const invMin = invMinInput && invMinInput.value ? parseFloat(invMinInput.value) : null;
+            const invMax = invMaxInput && invMaxInput.value ? parseFloat(invMaxInput.value) : null;
+            const qualityVal = qualityInput && qualityInput.value ? qualityInput.value.trim().toUpperCase() : '';
+            const linkVal = linkInput && linkInput.value ? linkInput.value.trim().toLowerCase() : '';
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                if (cells.length < 8) {
+                    row.style.display = '';
+                    return;
+                }
+                const dateText = (cells[0].textContent || '').trim();
+                const channelText = (cells[1].textContent || '').trim().toLowerCase();
+                const nameText = (cells[2].textContent || '').trim().toLowerCase();
+                const stageText = (cells[3].textContent || '').trim().toLowerCase();
+                const capText = (cells[4].textContent || '').trim();
+                const invText = (cells[5].textContent || '').trim();
+                const qualityText = (cells[6].textContent || '').trim().toUpperCase();
+                const linkAnchor = cells[7].querySelector('a');
+                const linkText = linkAnchor ? (linkAnchor.href || '').toLowerCase() : (cells[7].textContent || '').trim().toLowerCase();
+                let visible = true;
+                const dateVal = dateText ? dateText.slice(0, 10) : '';
+                if (fromVal && dateVal && dateVal < fromVal) visible = false;
+                if (toVal && dateVal && dateVal > toVal) visible = false;
+                if (chVal && !channelText.includes(chVal)) visible = false;
+                if (nameVal && !nameText.includes(nameVal)) visible = false;
+                if (stageVal && !stageText.includes(stageVal)) visible = false;
+                if (capMin != null) {
+                    const cap = parseFloat(capText);
+                    if (!(capText && !Number.isNaN(cap) && cap >= capMin)) visible = false;
+                }
+                if (capMax != null) {
+                    const cap = parseFloat(capText);
+                    if (!(capText && !Number.isNaN(cap) && cap <= capMax)) visible = false;
+                }
+                if (invMin != null) {
+                    const inv = parseFloat(invText);
+                    if (!(invText && !Number.isNaN(inv) && inv >= invMin)) visible = false;
+                }
+                if (invMax != null) {
+                    const inv = parseFloat(invText);
+                    if (!(invText && !Number.isNaN(inv) && inv <= invMax)) visible = false;
+                }
+                if (qualityVal && qualityText !== qualityVal) visible = false;
+                if (linkVal && !linkText.includes(linkVal)) visible = false;
+                row.style.display = visible ? '' : 'none';
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadHydrogenConfig();
+            loadHydrogenArticles();
+            loadClassicProjects();
+            loadAiConfig();
+            pollHydrogenStatus();
+            pollClassicStatus();
+            pollAiStatus();
+            setInterval(pollHydrogenStatus, 2000);
+            setInterval(pollClassicStatus, 3000);
+            setInterval(pollAiStatus, 3000);
+            const hydrogenBtn = document.getElementById('hydrogen-start-btn');
+            if (hydrogenBtn) {
+                hydrogenBtn.addEventListener('click', startHydrogenMonitor);
+            }
+            const hydrogenPrev = document.getElementById('hydrogen-article-prev');
+            const hydrogenNext = document.getElementById('hydrogen-article-next');
+            const hydrogenReload = document.getElementById('hydrogen-article-reload');
+            const hydrogenChannelSelect = document.getElementById('hydrogen-article-channel');
+            const hydrogenPageSizeInput = document.getElementById('hydrogen-article-page-size');
+            if (hydrogenPrev) {
+                hydrogenPrev.addEventListener('click', () => {
+                    if (hydrogenArticlePage > 1) {
+                        hydrogenArticlePage -= 1;
+                        loadHydrogenArticles();
+                    }
+                });
+            }
+            if (hydrogenNext) {
+                hydrogenNext.addEventListener('click', () => {
+                    if (hydrogenArticlePage < hydrogenArticleTotalPages) {
+                        hydrogenArticlePage += 1;
+                        loadHydrogenArticles();
+                    }
+                });
+            }
+            if (hydrogenReload) {
+                hydrogenReload.addEventListener('click', () => {
+                    hydrogenArticlePage = 1;
+                    loadHydrogenArticles();
+                });
+            }
+            if (hydrogenChannelSelect) {
+                hydrogenChannelSelect.addEventListener('change', () => {
+                    hydrogenArticlePage = 1;
+                    loadHydrogenArticles();
+                });
+            }
+            if (hydrogenPageSizeInput) {
+                hydrogenPageSizeInput.addEventListener('change', () => {
+                    hydrogenArticlePage = 1;
+                    loadHydrogenArticles();
+                });
+            }
+            ['hydrogen-filter-date-from', 'hydrogen-filter-date-to', 'hydrogen-filter-channel', 'hydrogen-filter-title', 'hydrogen-filter-link'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', filterHydrogenArticleRows);
+                }
+            });
+            const classicStart = document.getElementById('classic-start-btn');
+            if (classicStart) {
+                classicStart.addEventListener('click', () => {
+                    classicPage = 1;
+                    startClassicExtractor();
+                });
+            }
+            const classicPrev = document.getElementById('classic-prev');
+            const classicNext = document.getElementById('classic-next');
+            const classicReload = document.getElementById('classic-reload');
+            const classicChannelSelect = document.getElementById('classic-channel-filter');
+            const classicQualitySelect = document.getElementById('classic-quality-filter');
+            const classicPageSizeInput = document.getElementById('classic-page-size');
+            if (classicPrev) {
+                classicPrev.addEventListener('click', () => {
+                    if (classicPage > 1) {
+                        classicPage -= 1;
+                        loadClassicProjects();
+                    }
+                });
+            }
+            if (classicNext) {
+                classicNext.addEventListener('click', () => {
+                    if (classicPage < classicTotalPages) {
+                        classicPage += 1;
+                        loadClassicProjects();
+                    }
+                });
+            }
+            if (classicReload) {
+                classicReload.addEventListener('click', () => {
+                    classicPage = 1;
+                    loadClassicProjects();
+                });
+            }
+            if (classicChannelSelect) {
+                classicChannelSelect.addEventListener('change', () => {
+                    classicPage = 1;
+                    loadClassicProjects();
+                });
+            }
+            if (classicQualitySelect) {
+                classicQualitySelect.addEventListener('change', () => {
+                    classicPage = 1;
+                    loadClassicProjects();
+                });
+            }
+            if (classicPageSizeInput) {
+                classicPageSizeInput.addEventListener('change', () => {
+                    classicPage = 1;
+                    loadClassicProjects();
+                });
+            }
+            ['classic-filter-date-from', 'classic-filter-date-to', 'classic-filter-channel', 'classic-filter-name', 'classic-filter-stage', 'classic-filter-capacity-min', 'classic-filter-capacity-max', 'classic-filter-investment-min', 'classic-filter-investment-max', 'classic-filter-quality', 'classic-filter-link'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', filterClassicProjectRows);
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

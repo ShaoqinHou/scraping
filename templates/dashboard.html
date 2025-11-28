@@ -1,0 +1,2017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>氢能项目数据库</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            color: #333;
+        }
+        header {
+            background: #2b6cb0;
+            color: #fff;
+            padding: 16px 24px;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+        main {
+            max-width: none;
+            margin: 12px 12px 24px;
+            padding: 0 8px;
+        }
+        section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 16px 20px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        section h2 {
+            margin: 0 0 8px;
+            font-size: 18px;
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+        section h2 span.step-index {
+            font-weight: 600;
+            color: #2b6cb0;
+        }
+        section p.desc {
+            margin: 4px 0 12px;
+            font-size: 13px;
+            color: #555;
+        }
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .form-row label {
+            white-space: nowrap;
+        }
+        .form-row input[type="number"],
+        .form-row input[type="text"] {
+            padding: 4px 6px;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            min-width: 60px;
+        }
+        .form-row input[type="checkbox"] {
+            margin-right: 4px;
+        }
+        button {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid #2b6cb0;
+            background: #2b6cb0;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        button.secondary {
+            background: #fff;
+            color: #2b6cb0;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+        .status-line {
+            font-size: 13px;
+            margin-top: 8px;
+            color: #444;
+        }
+        .status-line strong {
+            color: #2b6cb0;
+        }
+        .captcha-panel {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+        .captcha-panel img {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 4px;
+            background: #fff;
+            display: none;
+        }
+        .captcha-panel input[type="text"] {
+            width: 80px;
+        }
+        .tag-section-title {
+            font-size: 13px;
+            margin-top: 4px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+        .tag-container {
+            min-height: 26px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 6px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            background: #fafafa;
+        }
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            background: #e2e8f0;
+            color: #1a202c;
+            border-radius: 999px;
+            padding: 2px 6px;
+            font-size: 12px;
+        }
+        .tag-label {
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .tag-remove {
+            margin-left: 4px;
+            border: none;
+            background: transparent;
+            color: #4a5568;
+            cursor: pointer;
+            padding: 0 2px;
+            font-size: 12px;
+            line-height: 1;
+        }
+        .tag-input-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+            font-size: 12px;
+        }
+        .tag-input-row input[type="text"] {
+            flex: 0 0 150px;
+        }
+        .tag-input-row span.hint {
+            color: #777;
+        }
+        .filter-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 2px 4px;
+            font-size: 11px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 4px 6px;
+            text-align: left;
+        }
+        th {
+            background: #edf2f7;
+        }
+        tbody tr:nth-child(even) {
+            background: #f7fafc;
+        }
+        tbody tr:hover {
+            background: #e6fffa;
+        }
+        .small {
+            font-size: 12px;
+            color: #666;
+        }
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .detail-wide {
+            max-height: 420px;
+            overflow: auto;
+        }
+        .detail-wide table {
+            min-width: 900px;
+        }
+        .table-scroll {
+            max-height: 380px;
+            overflow: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: #fff;
+            margin-top: 4px;
+        }
+        .section-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 8px;
+        }
+        #layout {
+            display: flex;
+            gap: 0;
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-top: 0;
+            padding-bottom: 0;
+            overflow-y: auto;
+        }
+        .column-left {
+            flex: 0 0 38%;
+            min-width: 280px;
+            padding-right: 16px;
+            padding-left: 4px;
+        }
+        .column-right {
+            flex: 1 1 auto;
+            min-width: 360px;
+            padding-left: 16px;
+            padding-right: 4px;
+        }
+        #col-resizer {
+            position: relative;
+            width: 10px;              /* 加大点击区域 */
+            cursor: col-resize;
+            background: transparent;  /* 视觉上只显示中间细线 */
+        }
+        #col-resizer::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            background: #cbd5e0;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>氢能项目数据库</h1>
+</header>
+<main>
+    <div id="layout">
+        <div id="col-left" class="column column-left">
+            <!-- 氢能站点监控 -->
+            <section id="section-hydrogen-monitor">
+                <div class="section-header-row">
+                    <h2><span class="step-index">0.</span> 氢能站点监控（qn.bjx.com.cn）</h2>
+                    <div class="small">自动监控北极星氢能网的项目与招标频道，并将链接记录到本地数据库。</div>
+                </div>
+                <p class="desc">此模块通过 HTTP 爬取 <code>qn.bjx.com.cn</code> 下的氢能频道，自动记录新文章，并在下方展示当前启用的频道和运行状态。</p>
+                <div class="form-row">
+                    <label>每轮目标新文章数：
+                        <input type="number" id="hydrogen-max-new" min="0" value="0">
+                        <span class="small">(0 表示不限)</span>
+                    </label>
+                    <label>每频道最大页数：
+                        <input type="number" id="hydrogen-max-pages" min="0" value="0">
+                        <span class="small">(0 表示自动停止)</span>
+                    </label>
+                    <button type="button" id="hydrogen-start-btn">开始监控一轮</button>
+                </div>
+                <div class="form-row">
+                    <span class="small">监控频道：</span>
+                    <div id="hydrogen-channel-list" class="small"></div>
+                </div>
+                <div class="status-line" id="hydrogen-status">
+                    状态：<strong id="hydrogen-status-text">待机</strong>
+                </div>
+                <div class="status-line small" id="hydrogen-status-detail">
+                    当前频道：-，页：0，本页新文章：0，本轮累计新文章：0，数据库总记录：0。
+                </div>
+                <div class="status-line small" id="hydrogen-article-summary">
+                    氢能文章记录：0 条，页 1 / 1。
+                </div>
+                <div class="table-scroll" style="margin-top: 4px;">
+                    <table id="hydrogen-article-table">
+                        <thead>
+                        <tr>
+                            <th>发布日期</th>
+                            <th>频道</th>
+                            <th>标题</th>
+                            <th>链接</th>
+                        </tr>
+                        <tr class="filter-row hydrogen-filter-row">
+                            <th>
+                                <input type="date" id="hydrogen-filter-date-from" class="filter-input">
+                                <br>
+                                <input type="date" id="hydrogen-filter-date-to" class="filter-input">
+                            </th>
+                            <th>
+                                <input type="text" id="hydrogen-filter-channel" class="filter-input" placeholder="包含...">
+                            </th>
+                            <th>
+                                <input type="text" id="hydrogen-filter-title" class="filter-input" placeholder="标题包含...">
+                            </th>
+                            <th>
+                                <input type="text" id="hydrogen-filter-link" class="filter-input" placeholder="链接包含...">
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody id="hydrogen-article-tbody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="form-row small">
+                    <label>频道筛选：
+                        <select id="hydrogen-article-channel">
+                            <option value="">全部频道</option>
+                        </select>
+                    </label>
+                    <label>每页条数：
+                        <input type="number" id="hydrogen-article-page-size" min="5" value="20">
+                    </label>
+                    <button type="button" class="secondary" id="hydrogen-article-prev">上一页</button>
+                    <button type="button" class="secondary" id="hydrogen-article-next">下一页</button>
+                    <button type="button" class="secondary" id="hydrogen-article-reload">刷新</button>
+                </div>
+            </section>
+
+            <!-- 氢能项目（经典规则） -->
+            <section id="section-classic-projects">
+                <div class="section-header-row">
+                    <h2><span class="step-index">0.1</span> 氢能项目（经典规则提取）</h2>
+                    <div class="small">基于已抓取的氢能及相关频道文章，使用规则从标题和正文中尽力抽取项目名称、阶段、容量、投资等字段。</div>
+                </div>
+                <p class="desc">此步骤不依赖 AI，只使用固定规则完成“最佳努力”的字段提取，并将文章正文缓存，方便后续开启 AI 抽取时复用。</p>
+
+                <div class="form-row">
+                    <label>每轮最大处理文章数：
+                        <input type="number" id="classic-max-articles" min="0" value="0">
+                        <span class="small">(0 表示不限)</span>
+                    </label>
+                    <label>评分阈值：
+                        <input type="number" id="classic-score-threshold" min="1" max="5" value="2">
+                        <span class="small">分数越高，越严格；目前暂定 ≥2 视为“值得提取”。</span>
+                    </label>
+                    <label>正文抓取并发数：
+                        <input type="number" id="classic-max-workers" min="1" max="32" value="10">
+                        <span class="small">同时抓取文章正文的请求数，默认 10。</span>
+                    </label>
+                    <label>
+                        <input type="checkbox" id="classic-show-browser">
+                        <span class="small">显示浏览器界面</span>
+                    </label>
+                    <button type="button" id="classic-start-btn">运行经典提取</button>
+                    <button type="button" class="secondary" id="classic-reset-btn">重置经典项目记录</button>
+                </div>
+
+                <div class="status-line" id="classic-status">
+                    状态：<strong id="classic-status-text">待机</strong>
+                </div>
+
+                <div class="form-row small" style="margin-top: 8px;">
+                    <label>频道筛选：
+                        <select id="classic-channel-filter">
+                            <option value="">全部频道</option>
+                        </select>
+                    </label>
+                    <label>质量等级：
+                        <select id="classic-quality-filter">
+                            <option value="">全部</option>
+                            <option value="A">A（项目名 + 阶段 + 容量/投资）</option>
+                            <option value="B">B（项目名 + 阶段或数字）</option>
+                            <option value="C">C（仅项目名）</option>
+                        </select>
+                    </label>
+                    <label>每页条数：
+                        <input type="number" id="classic-page-size" min="5" value="20">
+                    </label>
+                    <button type="button" class="secondary" id="classic-prev">上一页</button>
+                    <button type="button" class="secondary" id="classic-next">下一页</button>
+                    <button type="button" class="secondary" id="classic-reload">刷新</button>
+                    <button type="button" class="secondary" onclick="window.open('/classic-projects','_blank')">完整字段视图</button>
+                </div>
+
+                <div class="status-line small" id="classic-summary">
+                    经典项目记录：0 条，页 1 / 1。
+                </div>
+
+                <div class="table-scroll" style="margin-top: 4px;">
+                    <table id="classic-project-table">
+                        <thead>
+                        <tr>
+                            <th>发布日期</th>
+                            <th>频道</th>
+                            <th>项目名称</th>
+                            <th>阶段</th>
+                            <th>容量(MW)</th>
+                            <th>投资(元)</th>
+                            <th>质量</th>
+                            <th>链接</th>
+                        </tr>
+                        <tr class="filter-row classic-filter-row">
+                            <th>
+                                <input type="date" id="classic-filter-date-from" class="filter-input">
+                                <br>
+                                <input type="date" id="classic-filter-date-to" class="filter-input">
+                            </th>
+                            <th>
+                                <input type="text" id="classic-filter-channel" class="filter-input" placeholder="包含...">
+                            </th>
+                            <th>
+                                <input type="text" id="classic-filter-name" class="filter-input" placeholder="名称包含...">
+                            </th>
+                            <th>
+                                <input type="text" id="classic-filter-stage" class="filter-input" placeholder="阶段包含...">
+                            </th>
+                            <th>
+                                <input type="number" id="classic-filter-capacity-min" class="filter-input" placeholder="≥">
+                                <br>
+                                <input type="number" id="classic-filter-capacity-max" class="filter-input" placeholder="≤">
+                            </th>
+                            <th>
+                                <input type="number" id="classic-filter-investment-min" class="filter-input" placeholder="≥">
+                                <br>
+                                <input type="number" id="classic-filter-investment-max" class="filter-input" placeholder="≤">
+                            </th>
+                            <th>
+                                <input type="text" id="classic-filter-quality" class="filter-input" placeholder="A/B/C">
+                            </th>
+                            <th>
+                                <input type="text" id="classic-filter-link" class="filter-input" placeholder="链接包含...">
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody id="classic-project-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 1. 列表采集 -->
+            <section id="section-collector">
+                <div class="section-header-row">
+                    <h2><span class="step-index">1.</span> 列表采集</h2>
+                    <div class="small">首先采集项目列表，然后再进行筛选和详情提取。</div>
+                </div>
+                <p class="desc">此步骤从网站抓取项目列表数据并保存到 <code>inner_mongolia_projects.csv</code>。</p>
+                <div class="form-row">
+                    <label>最大页数：
+                        <input type="number" id="collector-max-pages" min="0" value="0">
+                        <span class="small">(0 表示全部)</span>
+                    </label>
+                    <label>最大打开标签数：
+                        <input type="number" id="collector-max-tabs" min="1" value="20">
+                    </label>
+                    <label>每秒打开页数：
+                        <input type="number" id="collector-pages-per-second" min="0.1" step="0.1" value="5">
+                    </label>
+                    <label>
+                        <input type="checkbox" id="collector-show-browser" checked> 显示浏览器
+                    </label>
+                    <label>
+                        <input type="checkbox" id="collector-retry"> 仅重试上次失败页面
+                    </label>
+                    <button id="collector-start-btn">开始列表采集</button>
+                </div>
+                <div class="captcha-panel">
+                    <span>列表验证码：</span>
+                    <img id="collector-captcha-image" alt="验证码">
+                    <input type="text" id="collector-captcha-code" placeholder="输入验证码">
+                    <button type="button" class="secondary" id="collector-captcha-submit">提交验证码</button>
+                    <span class="small">可在弹出的浏览器中直接输入验证码，也可以在此处提交。</span>
+                </div>
+                <div class="status-line" id="collector-status">
+                    状态：<strong id="collector-status-text">准备就绪</strong>
+                </div>
+            </section>
+
+            <!-- 2. 数据筛选 -->
+            <section id="section-filter">
+                <div class="section-header-row">
+                    <h2><span class="step-index">2.</span> 数据筛选</h2>
+                    <div class="small">对“1. 列表采集”得到的项目进行关键词筛选和勾选。</div>
+                </div>
+
+                <div>
+                    <div class="tag-section-title">关键词标签</div>
+                    <div id="keyword-tags" class="tag-container"></div>
+                    <div class="tag-input-row">
+                        <input type="text" id="keyword-input" placeholder="输入后按回车或点击＋">
+                        <button type="button" class="secondary" id="keyword-add-btn">＋</button>
+                        <span class="hint">用于匹配项目文本，可添加多个。</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 8px;">
+                    <div class="tag-section-title">排除词标签（可选）</div>
+                    <div id="exclude-tags" class="tag-container"></div>
+                    <div class="tag-input-row">
+                        <input type="text" id="exclude-input" placeholder="输入后按回车或点击＋">
+                        <button type="button" class="secondary" id="exclude-add-btn">＋</button>
+                        <span class="hint">包含这些词的项目将被排除。</span>
+                    </div>
+                </div>
+
+                <div class="flex-between" style="margin-top: 8px;">
+                    <div class="small" id="filter-summary">
+                        当前筛选项目：0 条，已勾选：0 条（勾选的项目将用于“3. 详情提取”；若未勾选则对全部筛选结果提取）。
+                    </div>
+                    <div>
+                        <button type="button" class="secondary" id="filter-refresh-btn">刷新数据</button>
+                        <button type="button" class="secondary" id="filter-toggle-select-all-btn">全选/取消全选</button>
+                    </div>
+                </div>
+
+                <div class="table-scroll">
+                    <table id="filter-table">
+                        <thead>
+                        <tr>
+                            <th style="width: 40px;">选中</th>
+                            <th>cbsnum</th>
+                            <th>项目名称</th>
+                            <th>审批事项</th>
+                            <th>审批结果</th>
+                        </tr>
+                        </thead>
+                        <tbody id="filter-tbody">
+                        <!-- 动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <div id="col-resizer"></div>
+
+        <div id="col-right" class="column column-right">
+            <!-- 3. 详情提取 -->
+            <section id="section-extractor">
+                <div class="section-header-row">
+                    <h2><span class="step-index">3.</span> 详情提取</h2>
+                    <div class="small">基于“2. 数据筛选”的结果，对选定项目打开详情页并提取审批记录。</div>
+                </div>
+                <p class="desc" id="extract-summary">
+                    当前将基于“2. 数据筛选”的结果提取详情数据。
+                </p>
+
+                <div class="form-row">
+                    <label>最大项目数：
+                        <input type="number" id="extract-max-projects" min="0" value="0">
+                        <span class="small">(0 表示全部)</span>
+                    </label>
+                    <label>最大并发项目数：
+                        <input type="number" id="extract-max-concurrent" min="1" value="5">
+                    </label>
+                    <label>最大打开标签数：
+                        <input type="number" id="extract-max-tabs" min="1" value="20">
+                    </label>
+                    <label>每秒打开页数：
+                        <input type="number" id="extract-pages-per-second" min="0.1" step="0.1" value="5">
+                    </label>
+                    <label>
+                        <input type="checkbox" id="extract-show-browser" checked> 显示浏览器
+                    </label>
+                    <button id="extract-start-btn">开始详情提取</button>
+                </div>
+
+                <div class="captcha-panel">
+                    <span>详情验证码：</span>
+                    <img id="extract-captcha-image" alt="验证码">
+                    <input type="text" id="extract-captcha-code" placeholder="输入验证码">
+                    <button type="button" class="secondary" id="extract-captcha-submit">提交验证码</button>
+                    <span class="small">可在弹出的浏览器中直接输入验证码，也可以在此处提交。</span>
+                </div>
+
+                <div class="status-line" id="extractor-status">
+                    状态：<strong id="extractor-status-text">待机</strong>
+                </div>
+            </section>
+
+            <!-- 4. 详情结果 -->
+              <section id="section-detail">
+                  <div class="section-header-row">
+                      <h2><span class="step-index">4.</span> 详情结果</h2>
+                      <div class="small">查看和筛选“3. 详情提取”生成的详细审批数据（过滤条件与步骤 2 共用）。</div>
+                  </div>
+  
+                  <div class="form-row">
+                      <label>选择详情文件：
+                          <select id="detail-file-select"></select>
+                      </label>
+                      <button type="button" class="secondary" id="detail-reload-btn">刷新详情</button>
+                      <button type="button" class="secondary" id="detail-full-view-btn">完整字段视图</button>
+                  </div>
+  
+                <div style="margin-top: 8px;">
+                    <div class="tag-section-title">详情关键词标签（与步骤 2 共用）</div>
+                    <div id="detail-keyword-tags" class="tag-container"></div>
+                    <div class="tag-input-row">
+                        <input type="text" id="detail-keyword-input" placeholder="输入后按回车或点击＋">
+                        <button type="button" class="secondary" id="detail-keyword-add-btn">＋</button>
+                        <span class="hint">用于筛选详情文本，可添加多个。</span>
+                    </div>
+                </div>
+
+                <div style="margin-top: 8px;">
+                    <div class="tag-section-title">详情排除词标签（与步骤 2 共用）</div>
+                    <div id="detail-exclude-tags" class="tag-container"></div>
+                    <div class="tag-input-row">
+                        <input type="text" id="detail-exclude-input" placeholder="输入后按回车或点击＋">
+                        <button type="button" class="secondary" id="detail-exclude-add-btn">＋</button>
+                        <span class="hint">包含这些词的详情记录将被排除。</span>
+                    </div>
+                </div>
+
+                <div class="detail-wide">
+                    <table id="detail-table">
+                        <thead>
+                        <tr id="detail-header-row"></tr>
+                        <tr id="detail-filter-row"></tr>
+                        </thead>
+                        <tbody id="detail-tbody">
+                        <!-- 动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="status-line small" id="detail-summary">
+                    详情记录：0 条。
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<script>
+    // 全局状态
+    let keywordTags = [];
+    let excludeTags = [];
+    let filteredRows = [];
+    const selectedCbsnums = new Set();
+    let hydrogenChannels = [];
+    let hydrogenArticlePage = 1;
+    let hydrogenArticleTotalPages = 1;
+    let hydrogenArticlePageSize = 20;
+    let classicPage = 1;
+    let classicTotalPages = 1;
+    let classicPageSize = 20;
+    let lastHydrogenStage = null;
+    let lastClassicStage = null;
+
+    function loadHydrogenConfig() {
+        fetch('/api/hydrogen/config')
+            .then(resp => resp.json())
+            .then(data => {
+                hydrogenChannels = (data.channels || []).map(ch => ({
+                    id: ch.id,
+                    label: ch.label,
+                    path: ch.path,
+                    content_type: ch.content_type,
+                    enabled: !!ch.enabled
+                }));
+                renderHydrogenChannels();
+            })
+            .catch(err => {
+                console.error('加载氢能频道配置失败：', err);
+            });
+    }
+
+    function renderHydrogenChannels() {
+        const container = document.getElementById('hydrogen-channel-list');
+        if (!container) return;
+        container.innerHTML = '';
+        hydrogenChannels.forEach(ch => {
+            const label = document.createElement('label');
+            label.style.marginRight = '12px';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = !!ch.enabled;
+            cb.addEventListener('change', () => {
+                ch.enabled = cb.checked;
+                saveHydrogenConfig();
+            });
+            label.appendChild(cb);
+            const text = document.createTextNode(` ${ch.label} (${ch.content_type})`);
+            label.appendChild(text);
+            container.appendChild(label);
+        });
+
+        const select = document.getElementById('hydrogen-article-channel');
+        if (select) {
+            const current = select.value;
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            hydrogenChannels.forEach(ch => {
+                const opt = document.createElement('option');
+                opt.value = ch.id;
+                opt.textContent = ch.label;
+                select.appendChild(opt);
+            });
+            if (current) {
+                select.value = current;
+            }
+        }
+
+        const classicSelect = document.getElementById('classic-channel-filter');
+        if (classicSelect) {
+            const currentClassic = classicSelect.value;
+            while (classicSelect.options.length > 1) {
+                classicSelect.remove(1);
+            }
+            hydrogenChannels.forEach(ch => {
+                const opt = document.createElement('option');
+                opt.value = ch.id;
+                opt.textContent = ch.label;
+                classicSelect.appendChild(opt);
+            });
+            if (currentClassic) {
+                classicSelect.value = currentClassic;
+            }
+        }
+    }
+
+    function saveHydrogenConfig() {
+        const payload = {
+            channels: hydrogenChannels.map(ch => ({ id: ch.id, enabled: ch.enabled }))
+        };
+        fetch('/api/hydrogen/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).catch(err => {
+            console.error('保存氢能频道配置失败：', err);
+        });
+    }
+
+    function startHydrogenMonitor() {
+        const btn = document.getElementById('hydrogen-start-btn');
+        if (btn) {
+            btn.disabled = true;
+        }
+        const maxNew = parseInt(document.getElementById('hydrogen-max-new').value || '0', 10);
+        const maxPages = parseInt(document.getElementById('hydrogen-max-pages').value || '0', 10);
+        const payload = {
+            max_new_articles: maxNew > 0 ? maxNew : null,
+            max_pages_per_channel: maxPages > 0 ? maxPages : null
+        };
+        fetch('/api/hydrogen/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(resp => {
+            if (!resp.ok) {
+                return resp.json().then(j => {
+                    throw new Error(j.message || '启动失败');
+                });
+            }
+        }).catch(err => {
+            let msg = err.message || '未知错误';
+            if (msg === 'Failed to fetch') {
+                msg = '无法连接到后端接口，请确认 app.py 正在运行，并通过 http://127.0.0.1:8000 访问本页面。';
+            }
+            alert('启动氢能监控失败：' + msg);
+        }).finally(() => {
+            if (btn) {
+                btn.disabled = false;
+            }
+        });
+    }
+
+    function loadHydrogenArticles() {
+        const pageSizeInput = document.getElementById('hydrogen-article-page-size');
+        if (pageSizeInput) {
+            const val = parseInt(pageSizeInput.value || '0', 10);
+            if (val > 0) {
+                hydrogenArticlePageSize = val;
+            } else {
+                hydrogenArticlePageSize = 20;
+                pageSizeInput.value = '20';
+            }
+        }
+        const channelSelect = document.getElementById('hydrogen-article-channel');
+        const channelId = channelSelect ? (channelSelect.value || '') : '';
+        const payload = {
+            page: hydrogenArticlePage,
+            page_size: hydrogenArticlePageSize,
+            channel_ids: channelId ? [channelId] : null
+        };
+        fetch('/api/hydrogen/articles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(resp => resp.json())
+            .then(data => {
+                const total = data.total || 0;
+                const items = data.items || [];
+                hydrogenArticleTotalPages = total > 0 ? Math.ceil(total / hydrogenArticlePageSize) : 1;
+                if (hydrogenArticlePage > hydrogenArticleTotalPages) {
+                    hydrogenArticlePage = hydrogenArticleTotalPages;
+                }
+                const summary = document.getElementById('hydrogen-article-summary');
+                if (summary) {
+                    summary.textContent = `氢能文章记录：${total} 条，页 ${hydrogenArticlePage} / ${hydrogenArticleTotalPages}。`;
+                }
+                const tbody = document.getElementById('hydrogen-article-tbody');
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    items.forEach(item => {
+                        const tr = document.createElement('tr');
+                        const tdDate = document.createElement('td');
+                        tdDate.textContent = item.published_at || '';
+                        const tdChannel = document.createElement('td');
+                        tdChannel.textContent = item.channel_label || item.channel_id || '';
+                        const tdTitle = document.createElement('td');
+                        tdTitle.textContent = item.title || '';
+                        const tdLink = document.createElement('td');
+                        if (item.url) {
+                            const a = document.createElement('a');
+                            a.href = item.url;
+                            a.textContent = '打开';
+                            a.target = '_blank';
+                            tdLink.appendChild(a);
+                        }
+                        tr.appendChild(tdDate);
+                        tr.appendChild(tdChannel);
+                        tr.appendChild(tdTitle);
+                        tr.appendChild(tdLink);
+                        tbody.appendChild(tr);
+                    });
+                }
+                filterHydrogenArticleRows();
+            })
+            .catch(err => {
+                console.error('加载氢能文章记录失败：', err);
+            });
+    }
+
+    function pollHydrogenStatus() {
+        fetch('/api/hydrogen/status')
+            .then(resp => resp.json())
+            .then(data => {
+                const stage = data.stage || 'idle';
+                let msg = data.message || '';
+                if (!msg) {
+                    msg = stage === 'running' ? '运行中' : '待机';
+                }
+                const current = typeof data.current === 'number' ? data.current : 0;
+                const total = typeof data.total === 'number' ? data.total : 0;
+                if (total > 0) {
+                    msg += `（${current}/${total}）`;
+                }
+                const statusText = document.getElementById('hydrogen-status-text');
+                if (statusText) {
+                    statusText.textContent = msg;
+                }
+                const label = data.channel_label || '—';
+                const page = data.page || 0;
+                const newInPage = data.new_in_page || 0;
+                const newInRun = data.new_in_run || 0;
+                const totalInDb = data.total_in_db || 0;
+                const detail = document.getElementById('hydrogen-status-detail');
+                if (detail) {
+                    detail.textContent =
+                        `当前频道：${label}，页：${page}，本页新文章：${newInPage}，本轮累计新文章：${newInRun}，数据库总记录：${totalInDb}。`;
+                }
+                if (lastHydrogenStage === 'running' && stage === 'idle') {
+                    hydrogenArticlePage = 1;
+                    loadHydrogenArticles();
+                }
+                lastHydrogenStage = stage;
+            })
+            .catch(err => {
+                console.error('获取氢能监控状态失败：', err);
+            });
+    }
+
+    function startClassicExtractor() {
+        const btn = document.getElementById('classic-start-btn');
+        if (btn) btn.disabled = true;
+        const maxArticlesVal = parseInt(document.getElementById('classic-max-articles').value || '0', 10);
+        const scoreThresholdVal = parseInt(document.getElementById('classic-score-threshold').value || '2', 10);
+        const maxWorkersVal = parseInt(document.getElementById('classic-max-workers').value || '10', 10);
+        const showBrowserEl = document.getElementById('classic-show-browser');
+        const showBrowser = showBrowserEl ? showBrowserEl.checked : false;
+        const payload = {
+            max_articles: maxArticlesVal > 0 ? maxArticlesVal : null,
+            score_threshold: scoreThresholdVal > 0 ? scoreThresholdVal : 2,
+            max_workers: maxWorkersVal > 0 ? maxWorkersVal : 10,
+            headless: !showBrowser
+        };
+        fetch('/api/hydrogen/projects/classic/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(resp => {
+                if (!resp.ok) {
+                    return resp.json().then(j => {
+                        throw new Error(j.message || '启动失败');
+                    });
+                }
+            })
+            .catch(err => {
+                let msg = err.message || '未知错误';
+                if (msg === 'Failed to fetch') {
+                    msg = '无法连接到后端接口，请确认 app.py 正在运行，并通过 http://127.0.0.1:8000 访问本页面。';
+                }
+                alert('启动经典项目提取失败：' + msg);
+            })
+            .finally(() => {
+                if (btn) btn.disabled = false;
+            });
+    }
+
+    function pollClassicStatus() {
+        fetch('/api/hydrogen/projects/classic/status')
+            .then(resp => resp.json())
+            .then(data => {
+                const stage = data.stage || 'idle';
+                let msg = data.message || '';
+                if (!msg) {
+                    msg = stage === 'running' ? '运行中' : '待机';
+                }
+                const current = typeof data.current === 'number' ? data.current : 0;
+                const total = typeof data.total === 'number' ? data.total : 0;
+                if (total > 0) {
+                    msg += `（${current}/${total}）`;
+                }
+                const el = document.getElementById('classic-status-text');
+                if (el) el.textContent = msg;
+                if (lastClassicStage === 'running' && stage === 'idle') {
+                    classicPage = 1;
+                    loadClassicProjects();
+                }
+                lastClassicStage = stage;
+            })
+            .catch(err => {
+                console.error('获取经典提取状态失败：', err);
+            });
+    }
+
+    function loadClassicProjects() {
+        const sizeInput = document.getElementById('classic-page-size');
+        if (sizeInput) {
+            const v = parseInt(sizeInput.value || '0', 10);
+            if (v > 0) {
+                classicPageSize = v;
+            } else {
+                classicPageSize = 20;
+                sizeInput.value = '20';
+            }
+        }
+        const channelSelect = document.getElementById('classic-channel-filter');
+        const qualitySelect = document.getElementById('classic-quality-filter');
+        const channelId = channelSelect ? (channelSelect.value || '') : '';
+        const quality = qualitySelect ? (qualitySelect.value || '') : '';
+        const payload = {
+            page: classicPage,
+            page_size: classicPageSize,
+            channel_ids: channelId ? [channelId] : null,
+            classic_quality: quality || null
+        };
+        fetch('/api/hydrogen/projects/classic/list', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+            .then(resp => resp.json())
+            .then(data => {
+                const total = data.total || 0;
+                const items = data.items || [];
+                classicTotalPages = total > 0 ? Math.ceil(total / classicPageSize) : 1;
+                if (classicPage > classicTotalPages) classicPage = classicTotalPages;
+                const summary = document.getElementById('classic-summary');
+                if (summary) {
+                    summary.textContent = `经典项目记录：${total} 条，页 ${classicPage} / ${classicTotalPages}。`;
+                }
+                const tbody = document.getElementById('classic-project-tbody');
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    items.forEach(item => {
+                        const tr = document.createElement('tr');
+                        const tdDate = document.createElement('td');
+                        tdDate.textContent = item.published_at || '';
+                        const tdChannel = document.createElement('td');
+                        tdChannel.textContent = item.channel_label || item.channel_id || '';
+                        const tdName = document.createElement('td');
+                        tdName.textContent = item.project_name || '';
+                        const tdStage = document.createElement('td');
+                        tdStage.textContent = item.stage || '';
+                        const tdCap = document.createElement('td');
+                        tdCap.textContent = item.capacity_mw != null ? String(item.capacity_mw) : '';
+                        const tdInv = document.createElement('td');
+                        tdInv.textContent = item.investment_cny != null ? String(item.investment_cny) : '';
+                        const tdQ = document.createElement('td');
+                        tdQ.textContent = item.classic_quality || '';
+                        const tdLink = document.createElement('td');
+                        if (item.url) {
+                            const a = document.createElement('a');
+                            a.href = item.url;
+                            a.textContent = '打开';
+                            a.target = '_blank';
+                            tdLink.appendChild(a);
+                        }
+                        tr.appendChild(tdDate);
+                        tr.appendChild(tdChannel);
+                        tr.appendChild(tdName);
+                        tr.appendChild(tdStage);
+                        tr.appendChild(tdCap);
+                        tr.appendChild(tdInv);
+                        tr.appendChild(tdQ);
+                        tr.appendChild(tdLink);
+                        tbody.appendChild(tr);
+                    });
+                }
+                filterClassicProjectRows();
+            })
+            .catch(err => {
+                console.error('加载经典项目记录失败：', err);
+            });
+    }
+
+    function filterHydrogenArticleRows() {
+        const tbody = document.getElementById('hydrogen-article-tbody');
+        if (!tbody) return;
+        const fromInput = document.getElementById('hydrogen-filter-date-from');
+        const toInput = document.getElementById('hydrogen-filter-date-to');
+        const chInput = document.getElementById('hydrogen-filter-channel');
+        const titleInput = document.getElementById('hydrogen-filter-title');
+        const linkInput = document.getElementById('hydrogen-filter-link');
+        const fromVal = fromInput && fromInput.value ? fromInput.value : '';
+        const toVal = toInput && toInput.value ? toInput.value : '';
+        const chVal = chInput && chInput.value ? chInput.value.trim().toLowerCase() : '';
+        const titleVal = titleInput && titleInput.value ? titleInput.value.trim().toLowerCase() : '';
+        const linkVal = linkInput && linkInput.value ? linkInput.value.trim().toLowerCase() : '';
+
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length < 4) {
+                row.style.display = '';
+                return;
+            }
+            const dateText = (cells[0].textContent || '').trim();
+            const channelText = (cells[1].textContent || '').trim().toLowerCase();
+            const titleText = (cells[2].textContent || '').trim().toLowerCase();
+            const linkAnchor = cells[3].querySelector('a');
+            const linkText = linkAnchor ? (linkAnchor.href || '').toLowerCase() : (cells[3].textContent || '').trim().toLowerCase();
+
+            let visible = true;
+            const dateVal = dateText ? dateText.slice(0, 10) : '';
+            if (fromVal && dateVal && dateVal < fromVal) visible = false;
+            if (toVal && dateVal && dateVal > toVal) visible = false;
+            if (chVal && !channelText.includes(chVal)) visible = false;
+            if (titleVal && !titleText.includes(titleVal)) visible = false;
+            if (linkVal && !linkText.includes(linkVal)) visible = false;
+
+            row.style.display = visible ? '' : 'none';
+        });
+    }
+
+    function filterClassicProjectRows() {
+        const tbody = document.getElementById('classic-project-tbody');
+        if (!tbody) return;
+        const fromInput = document.getElementById('classic-filter-date-from');
+        const toInput = document.getElementById('classic-filter-date-to');
+        const chInput = document.getElementById('classic-filter-channel');
+        const nameInput = document.getElementById('classic-filter-name');
+        const stageInput = document.getElementById('classic-filter-stage');
+        const capMinInput = document.getElementById('classic-filter-capacity-min');
+        const capMaxInput = document.getElementById('classic-filter-capacity-max');
+        const invMinInput = document.getElementById('classic-filter-investment-min');
+        const invMaxInput = document.getElementById('classic-filter-investment-max');
+        const qualityInput = document.getElementById('classic-filter-quality');
+        const linkInput = document.getElementById('classic-filter-link');
+
+        const fromVal = fromInput && fromInput.value ? fromInput.value : '';
+        const toVal = toInput && toInput.value ? toInput.value : '';
+        const chVal = chInput && chInput.value ? chInput.value.trim().toLowerCase() : '';
+        const nameVal = nameInput && nameInput.value ? nameInput.value.trim().toLowerCase() : '';
+        const stageVal = stageInput && stageInput.value ? stageInput.value.trim().toLowerCase() : '';
+        const capMin = capMinInput && capMinInput.value ? parseFloat(capMinInput.value) : null;
+        const capMax = capMaxInput && capMaxInput.value ? parseFloat(capMaxInput.value) : null;
+        const invMin = invMinInput && invMinInput.value ? parseFloat(invMinInput.value) : null;
+        const invMax = invMaxInput && invMaxInput.value ? parseFloat(invMaxInput.value) : null;
+        const qualityVal = qualityInput && qualityInput.value ? qualityInput.value.trim().toUpperCase() : '';
+        const linkVal = linkInput && linkInput.value ? linkInput.value.trim().toLowerCase() : '';
+
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length < 8) {
+                row.style.display = '';
+                return;
+            }
+            const dateText = (cells[0].textContent || '').trim();
+            const channelText = (cells[1].textContent || '').trim().toLowerCase();
+            const nameText = (cells[2].textContent || '').trim().toLowerCase();
+            const stageText = (cells[3].textContent || '').trim().toLowerCase();
+            const capText = (cells[4].textContent || '').trim();
+            const invText = (cells[5].textContent || '').trim();
+            const qualityText = (cells[6].textContent || '').trim().toUpperCase();
+            const linkAnchor = cells[7].querySelector('a');
+            const linkText = linkAnchor ? (linkAnchor.href || '').toLowerCase() : (cells[7].textContent || '').trim().toLowerCase();
+
+            let visible = true;
+            const dateVal = dateText ? dateText.slice(0, 10) : '';
+            if (fromVal && dateVal && dateVal < fromVal) visible = false;
+            if (toVal && dateVal && dateVal > toVal) visible = false;
+            if (chVal && !channelText.includes(chVal)) visible = false;
+            if (nameVal && !nameText.includes(nameVal)) visible = false;
+            if (stageVal && !stageText.includes(stageVal)) visible = false;
+            if (capMin != null) {
+                const cap = parseFloat(capText);
+                if (!(capText && !Number.isNaN(cap) && cap >= capMin)) visible = false;
+            }
+            if (capMax != null) {
+                const cap = parseFloat(capText);
+                if (!(capText && !Number.isNaN(cap) && cap <= capMax)) visible = false;
+            }
+            if (invMin != null) {
+                const inv = parseFloat(invText);
+                if (!(invText && !Number.isNaN(inv) && inv >= invMin)) visible = false;
+            }
+            if (invMax != null) {
+                const inv = parseFloat(invText);
+                if (!(invText && !Number.isNaN(inv) && inv <= invMax)) visible = false;
+            }
+            if (qualityVal && qualityText !== qualityVal) visible = false;
+            if (linkVal && !linkText.includes(linkVal)) visible = false;
+
+            row.style.display = visible ? '' : 'none';
+        });
+    }
+
+    function saveFilterState() {
+        try {
+            const state = { keywords: keywordTags, exclude: excludeTags, selected: Array.from(selectedCbsnums) };
+            localStorage.setItem('project_filter_state', JSON.stringify(state));
+        } catch (e) {
+            console.warn('无法保存筛选状态：', e);
+        }
+    }
+
+    // 返回当前筛选结果中“已勾选”的 cbsnum 列表
+    function getSelectedCbsnums() {
+        const inView = new Set();
+        filteredRows.forEach(row => {
+            const cbs = (row.cbsnum || '').trim();
+            if (cbs && selectedCbsnums.has(cbs)) {
+                inView.add(cbs);
+            }
+        });
+        return Array.from(inView);
+    }
+
+    function loadFilterState() {
+        try {
+            const raw = localStorage.getItem('project_filter_state');
+            if (!raw) return;
+            const state = JSON.parse(raw);
+            keywordTags = state.keywords || [];
+            excludeTags = state.exclude || [];
+            (state.selected || []).forEach(c => selectedCbsnums.add(c));
+        } catch (e) {
+            console.warn('无法加载筛选状态：', e);
+        }
+    }
+
+    function renderTags() {
+        const kwContainers = [
+            document.getElementById('keyword-tags'),
+            document.getElementById('detail-keyword-tags')
+        ];
+        const exContainers = [
+            document.getElementById('exclude-tags'),
+            document.getElementById('detail-exclude-tags')
+        ];
+
+        kwContainers.forEach(container => {
+            if (!container) return;
+            container.innerHTML = '';
+            keywordTags.forEach((tag, idx) => {
+                const pill = document.createElement('span');
+                pill.className = 'tag';
+
+                const label = document.createElement('span');
+                label.className = 'tag-label';
+                label.textContent = tag;
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'tag-remove';
+                btn.textContent = '×';
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    keywordTags.splice(idx, 1);
+                    saveFilterState();
+                    renderTags();
+                    reloadFilterData();
+                    reloadDetailData();
+                });
+
+                pill.appendChild(label);
+                pill.appendChild(btn);
+                container.appendChild(pill);
+            });
+        });
+
+        exContainers.forEach(container => {
+            if (!container) return;
+            container.innerHTML = '';
+            excludeTags.forEach((tag, idx) => {
+                const pill = document.createElement('span');
+                pill.className = 'tag';
+
+                const label = document.createElement('span');
+                label.className = 'tag-label';
+                label.textContent = tag;
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'tag-remove';
+                btn.textContent = '×';
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    excludeTags.splice(idx, 1);
+                    saveFilterState();
+                    renderTags();
+                    reloadFilterData();
+                    reloadDetailData();
+                });
+
+                pill.appendChild(label);
+                pill.appendChild(btn);
+                container.appendChild(pill);
+            });
+        });
+    }
+
+    function addKeywordTagFromInput() {
+        const input = document.getElementById('keyword-input');
+        const value = (input.value || '').trim();
+        if (!value) return;
+        if (!keywordTags.includes(value)) {
+            keywordTags.push(value);
+            input.value = '';
+            saveFilterState();
+            renderTags();
+            reloadFilterData();
+        }
+    }
+
+    function addExcludeTagFromInput() {
+        const input = document.getElementById('exclude-input');
+        const value = (input.value || '').trim();
+        if (!value) return;
+        if (!excludeTags.includes(value)) {
+            excludeTags.push(value);
+            input.value = '';
+            saveFilterState();
+            renderTags();
+            reloadFilterData();
+        }
+    }
+
+    function addDetailKeywordTagFromInput() {
+        const input = document.getElementById('detail-keyword-input');
+        const value = (input.value || '').trim();
+        if (!value) return;
+        if (!keywordTags.includes(value)) {
+            keywordTags.push(value);
+            input.value = '';
+            saveFilterState();
+            renderTags();
+            reloadFilterData();
+            reloadDetailData();
+        }
+    }
+
+    function addDetailExcludeTagFromInput() {
+        const input = document.getElementById('detail-exclude-input');
+        const value = (input.value || '').trim();
+        if (!value) return;
+        if (!excludeTags.includes(value)) {
+            excludeTags.push(value);
+            input.value = '';
+            saveFilterState();
+            renderTags();
+            reloadFilterData();
+            reloadDetailData();
+        }
+    }
+
+    function renderFilterTable() {
+        const tbody = document.getElementById('filter-tbody');
+        tbody.innerHTML = '';
+        filteredRows.forEach((row) => {
+            const tr = document.createElement('tr');
+            const cbs = (row.cbsnum || '').trim();
+
+            const tdCheck = document.createElement('td');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'row-checkbox';
+            checkbox.dataset.cbsnum = cbs;
+            checkbox.checked = selectedCbsnums.has(cbs);
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    if (cbs) selectedCbsnums.add(cbs);
+                } else {
+                    selectedCbsnums.delete(cbs);
+                }
+                saveFilterState();
+                updateSelectionSummary();
+            });
+            tdCheck.appendChild(checkbox);
+            tr.appendChild(tdCheck);
+
+            const tdCbs = document.createElement('td');
+            tdCbs.textContent = cbs;
+            tr.appendChild(tdCbs);
+
+            const tdName = document.createElement('td');
+            tdName.textContent = row.name || '';
+            tr.appendChild(tdName);
+
+            const tdApproval = document.createElement('td');
+            tdApproval.textContent = row.approval || '';
+            tr.appendChild(tdApproval);
+
+            const tdResult = document.createElement('td');
+            tdResult.textContent = row.result || '';
+            tr.appendChild(tdResult);
+
+            tbody.appendChild(tr);
+        });
+        updateSelectionSummary();
+    }
+
+    function updateSelectionSummary() {
+        const total = filteredRows.length;
+        const selectedCount = getSelectedCbsnums().length;
+        const summary = document.getElementById('filter-summary');
+        summary.textContent =
+            `当前筛选项目：${total} 条，已勾选：${selectedCount} 条（勾选的项目将用于“3. 详情提取”；若未勾选则对全部筛选结果提取）。`;
+
+        const extractSummary = document.getElementById('extract-summary');
+        if (total === 0) {
+            extractSummary.textContent = '当前暂无可用项目，请先完成“1. 列表采集”，或调整筛选条件。';
+        } else if (selectedCount > 0) {
+            extractSummary.textContent = `本次将处理 ${selectedCount} 条项目（基于“2. 数据筛选”中已勾选的项目，总筛选 ${total} 条）。`;
+        } else {
+            extractSummary.textContent = `本次将处理 ${total} 条项目（基于“2. 数据筛选”的全部结果）。`;
+        }
+    }
+
+    function reloadFilterData() {
+        fetch('/api/data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                keywords: keywordTags,
+                exclude: excludeTags,
+                cbsnums: []  // 不在此处按 cbsnum 文本过滤
+            })
+        }).then(resp => resp.json())
+            .then(data => {
+                filteredRows = data.rows || [];
+                renderFilterTable();
+            }).catch(err => {
+                console.error('加载筛选数据失败：', err);
+            });
+    }
+
+    function toggleSelectAll() {
+        const checkboxes = document.querySelectorAll('#filter-tbody .row-checkbox');
+        let allChecked = true;
+        checkboxes.forEach(cb => {
+            if (!cb.checked) allChecked = false;
+        });
+        if (allChecked) {
+            // 取消全选
+            checkboxes.forEach(cb => {
+                cb.checked = false;
+                const cbs = (cb.dataset.cbsnum || '').trim();
+                if (cbs) selectedCbsnums.delete(cbs);
+            });
+        } else {
+            // 全选
+            checkboxes.forEach(cb => {
+                cb.checked = true;
+                const cbs = (cb.dataset.cbsnum || '').trim();
+                if (cbs) selectedCbsnums.add(cbs);
+            });
+        }
+        saveFilterState();
+        updateSelectionSummary();
+    }
+
+    // 采集器 & 提取器状态轮询
+    function pollStatus() {
+        fetch('/api/status')
+            .then(resp => resp.json())
+            .then(data => {
+                const collector = data.collector || {};
+                const extractor = data.extractor || {};
+
+                const cText = document.getElementById('collector-status-text');
+                const eText = document.getElementById('extractor-status-text');
+
+                let cMsg = collector.message || '';
+                if (collector.total && collector.total > 0) {
+                    cMsg += `（${collector.current}/${collector.total}）`;
+                }
+                cText.textContent = cMsg || '准备就绪';
+
+                let eMsg = extractor.message || '';
+                if (extractor.total && extractor.total > 0) {
+                    eMsg += `（${extractor.current}/${extractor.total}）`;
+                }
+                eText.textContent = eMsg || '待机';
+            })
+            .catch(err => {
+                console.error('获取状态失败：', err);
+            });
+    }
+
+    // 验证码轮询（列表 & 详情共用同一 CaptchaManager，仅 UI 分开）
+    function pollCaptcha() {
+        fetch('/captcha/status')
+            .then(resp => resp.json())
+            .then(data => {
+                const hasImage = !!data.has_image;
+                const src = '/captcha/captcha-image?_=' + Date.now();
+
+                const img1 = document.getElementById('collector-captcha-image');
+                const img2 = document.getElementById('extract-captcha-image');
+                if (hasImage) {
+                    if (img1) {
+                        img1.src = src;
+                        img1.style.display = 'inline-block';
+                    }
+                    if (img2) {
+                        img2.src = src;
+                        img2.style.display = 'inline-block';
+                    }
+                } else {
+                    if (img1) img1.style.display = 'none';
+                    if (img2) img2.style.display = 'none';
+                }
+            })
+            .catch(err => {
+                console.error('轮询验证码失败：', err);
+            });
+    }
+
+    function submitCaptchaFrom(inputId) {
+        const input = document.getElementById(inputId);
+        const code = (input.value || '').trim();
+        if (!code) {
+            alert('请输入验证码');
+            return;
+        }
+        fetch('/captcha/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code })
+        }).then(resp => resp.json())
+            .then(data => {
+                if (!data.ok) {
+                    alert('提交失败：' + (data.message || '未知错误'));
+                } else {
+                    input.value = '';
+                }
+            })
+            .catch(err => {
+                console.error('提交验证码失败：', err);
+            });
+    }
+
+    function startCollector() {
+        const maxPages = parseInt(document.getElementById('collector-max-pages').value || '0', 10);
+        const maxTabs = parseInt(document.getElementById('collector-max-tabs').value || '0', 10);
+        const pps = parseFloat(document.getElementById('collector-pages-per-second').value || '0');
+        const showBrowser = document.getElementById('collector-show-browser').checked;
+        const retry = document.getElementById('collector-retry').checked;
+
+        const payload = {
+            retry: retry,
+            max_pages: maxPages > 0 ? maxPages : null,
+            headless: !showBrowser,
+            max_open_tabs: maxTabs > 0 ? maxTabs : null,
+            pages_per_second: pps > 0 ? pps : null
+        };
+
+        document.getElementById('collector-start-btn').disabled = true;
+
+        fetch('/api/collector', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(resp => {
+            if (!resp.ok) {
+                return resp.json().then(j => {
+                    throw new Error(j.message || '启动失败');
+                });
+            }
+        }).catch(err => {
+            alert('启动列表采集失败：' + err.message);
+        }).finally(() => {
+            document.getElementById('collector-start-btn').disabled = false;
+        });
+    }
+
+    function startExtractor() {
+        const total = filteredRows.length;
+        const selectedList = getSelectedCbsnums();
+        const selected = selectedList.length;
+        const targetCount = selected > 0 ? selected : total;
+        if (!targetCount) {
+            alert('当前没有可提取的项目，请先完成“1. 列表采集”并在“2. 数据筛选”中选择数据。');
+            return;
+        }
+
+        const maxProjects = parseInt(document.getElementById('extract-max-projects').value || '0', 10);
+        const maxConcurrent = parseInt(document.getElementById('extract-max-concurrent').value || '0', 10);
+        const maxTabs = parseInt(document.getElementById('extract-max-tabs').value || '0', 10);
+        const pps = parseFloat(document.getElementById('extract-pages-per-second').value || '0');
+        const showBrowser = document.getElementById('extract-show-browser').checked;
+
+        const payload = {
+            csv_file: 'inner_mongolia_projects.csv',
+            keywords: keywordTags,
+            cbsnums: selected > 0 ? selectedList : null,
+            max_projects: maxProjects > 0 ? maxProjects : null,
+            headless: !showBrowser,
+            max_concurrent: maxConcurrent > 0 ? maxConcurrent : null,
+            max_open_tabs: maxTabs > 0 ? maxTabs : null,
+            pages_per_second: pps > 0 ? pps : null
+        };
+
+        document.getElementById('extract-start-btn').disabled = true;
+
+        fetch('/api/extractor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        }).then(resp => {
+            if (!resp.ok) {
+                return resp.json().then(j => {
+                    throw new Error(j.message || '启动失败');
+                });
+            }
+        }).catch(err => {
+            alert('启动详情提取失败：' + err.message);
+        }).finally(() => {
+            document.getElementById('extract-start-btn').disabled = false;
+        });
+    }
+
+    // 详情结果加载
+    function loadDetailFiles() {
+        fetch('/api/detail-files')
+            .then(resp => resp.json())
+            .then(data => {
+                const select = document.getElementById('detail-file-select');
+                select.innerHTML = '';
+                (data.files || []).forEach(f => {
+                    const opt = document.createElement('option');
+                    opt.value = f;
+                    opt.textContent = f;
+                    select.appendChild(opt);
+                });
+                // 更新列表后自动尝试加载一次详情
+                reloadDetailData();
+            })
+            .catch(err => {
+                console.error('加载详情文件列表失败：', err);
+            });
+    }
+
+      function reloadDetailData() {
+          const select = document.getElementById('detail-file-select');
+          const filename = select.value;
+          if (!filename) {
+              document.getElementById('detail-header-row').innerHTML = '';
+              document.getElementById('detail-tbody').innerHTML = '';
+              document.getElementById('detail-summary').textContent = '详情记录：0 条。';
+              return;
+          }
+
+        fetch('/api/detail-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                file: filename,
+                keywords: keywordTags,
+                exclude: excludeTags
+            })
+          }).then(resp => resp.json())
+              .then(data => {
+                  const header = data.header || [];
+                  const rows = data.rows || [];
+                  window.detailHeader = header;
+                  window.detailRows = rows;
+                  renderDetailSummaryTable();
+              })
+              .catch(err => {
+                  console.error('加载详情数据失败：', err);
+              });
+      }
+
+      function renderDetailSummaryTable() {
+          const headerRow = document.getElementById('detail-header-row');
+          const filterRow = document.getElementById('detail-filter-row');
+          const tbody = document.getElementById('detail-tbody');
+          headerRow.innerHTML = '';
+          if (filterRow) {
+              filterRow.innerHTML = '';
+          }
+          tbody.innerHTML = '';
+          const header = window.detailHeader || [];
+          const rows = window.detailRows || [];
+          const colsConfig = [
+              { key: '审批日期', label: '审批日期', type: 'date', filterId: 'detail-filter-date' },
+              { key: '审批部门', label: '审批部门', type: 'text', filterId: 'detail-filter-dept' },
+              { key: '审批文号', label: '审批文号', type: 'text', filterId: 'detail-filter-docno' },
+              { key: '审批事项', label: '审批事项', type: 'text', filterId: 'detail-filter-item' },
+              { key: '审批结果', label: '审批结果', type: 'text', filterId: 'detail-filter-result' },
+              { key: '申报单位', label: '申报单位', type: 'text', filterId: 'detail-filter-owner' },
+              { key: '项目代码', label: '项目代码', type: 'text', filterId: 'detail-filter-project-code' },
+              { key: '项目名称', label: '项目名称', type: 'text', filterId: 'detail-filter-project-name' },
+              { key: '项目类型', label: '项目类型', type: 'text', filterId: 'detail-filter-project-type' },
+              { key: '附件名称', label: '附件名称', type: 'text', filterId: 'detail-filter-attach-name' },
+              { key: '附件链接', label: '附件链接', type: 'text', filterId: 'detail-filter-attach-link' },
+          ];
+          const usedCols = colsConfig.filter(c => header.includes(c.key));
+          if (!usedCols.length) {
+              // 回退到原始表头
+              header.forEach(h => {
+                  const th = document.createElement('th');
+                  th.textContent = h;
+                  headerRow.appendChild(th);
+              });
+              rows.forEach(row => {
+                  const tr = document.createElement('tr');
+                  header.forEach(h => {
+                      const td = document.createElement('td');
+                      td.textContent = row[h] || '';
+                      tr.appendChild(td);
+                  });
+                  tbody.appendChild(tr);
+              });
+              document.getElementById('detail-summary').textContent = `详情记录：${rows.length} 条。`;
+              return;
+          }
+          // summary header
+          usedCols.forEach(c => {
+              const th = document.createElement('th');
+              th.textContent = c.label;
+              headerRow.appendChild(th);
+          });
+          // filter row
+          if (filterRow) {
+          usedCols.forEach(c => {
+              const th = document.createElement('th');
+              const input = document.createElement('input');
+              input.className = 'filter-input';
+              input.id = c.filterId;
+              if (c.type === 'date') {
+                  input.type = 'date';
+              } else {
+                  input.type = 'text';
+                  input.placeholder = '包含...';
+              }
+              th.appendChild(input);
+              filterRow.appendChild(th);
+          });
+          }
+          // rows
+          rows.forEach(row => {
+              const tr = document.createElement('tr');
+              usedCols.forEach(c => {
+                  const td = document.createElement('td');
+                  td.textContent = row[c.key] || '';
+                  tr.appendChild(td);
+              });
+              tbody.appendChild(tr);
+          });
+          document.getElementById('detail-summary').textContent = `详情记录：${rows.length} 条。`;
+          setupDetailSummaryFilters(usedCols);
+      }
+
+      function setupDetailSummaryFilters(usedCols) {
+          const handler = () => filterDetailSummaryRows(usedCols);
+          usedCols.forEach(c => {
+              const el = document.getElementById(c.filterId);
+              if (el) {
+                  el.addEventListener('input', handler);
+              }
+          });
+      }
+
+      function filterDetailSummaryRows(usedCols) {
+          const tbody = document.getElementById('detail-tbody');
+          const rows = Array.from(tbody.querySelectorAll('tr'));
+          const filters = {};
+          usedCols.forEach((c, idx) => {
+              const el = document.getElementById(c.filterId);
+              if (!el) return;
+              const val = (el.value || '').trim();
+              if (!val) return;
+              filters[idx] = { type: c.type, value: val.toLowerCase() };
+          });
+          rows.forEach(row => {
+              const cells = row.querySelectorAll('td');
+              let visible = true;
+              Object.keys(filters).forEach(k => {
+                  if (!visible) return;
+                  const idx = parseInt(k, 10);
+                  const f = filters[idx];
+                  const text = (cells[idx].textContent || '').trim();
+                  if (f.type === 'date') {
+                      // 单个日期输入时按“包含”过滤更直观
+                      if (!text.includes(f.value)) {
+                          visible = false;
+                      }
+                  } else {
+                      if (!text.toLowerCase().includes(f.value)) {
+                          visible = false;
+                      }
+                  }
+              });
+              row.style.display = visible ? '' : 'none';
+          });
+      }
+
+    // 初始化
+    window.addEventListener('DOMContentLoaded', () => {
+        loadFilterState();
+        renderTags();
+        reloadFilterData();
+        loadDetailFiles();
+        loadHydrogenConfig();
+
+        document.getElementById('keyword-add-btn').addEventListener('click', addKeywordTagFromInput);
+        document.getElementById('exclude-add-btn').addEventListener('click', addExcludeTagFromInput);
+        document.getElementById('keyword-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addKeywordTagFromInput();
+            }
+        });
+        document.getElementById('exclude-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addExcludeTagFromInput();
+            }
+        });
+
+        document.getElementById('detail-keyword-add-btn').addEventListener('click', addDetailKeywordTagFromInput);
+        document.getElementById('detail-exclude-add-btn').addEventListener('click', addDetailExcludeTagFromInput);
+        document.getElementById('detail-keyword-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addDetailKeywordTagFromInput();
+            }
+        });
+        document.getElementById('detail-exclude-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addDetailExcludeTagFromInput();
+            }
+        });
+
+        document.getElementById('filter-refresh-btn').addEventListener('click', reloadFilterData);
+        document.getElementById('filter-toggle-select-all-btn').addEventListener('click', toggleSelectAll);
+
+        document.getElementById('collector-start-btn').addEventListener('click', startCollector);
+        document.getElementById('extract-start-btn').addEventListener('click', startExtractor);
+        const hydrogenBtn = document.getElementById('hydrogen-start-btn');
+        if (hydrogenBtn) {
+            hydrogenBtn.addEventListener('click', startHydrogenMonitor);
+        }
+        const hydrogenPrev = document.getElementById('hydrogen-article-prev');
+        const hydrogenNext = document.getElementById('hydrogen-article-next');
+        const hydrogenReload = document.getElementById('hydrogen-article-reload');
+        const hydrogenChannelSelect = document.getElementById('hydrogen-article-channel');
+        const hydrogenPageSizeInput = document.getElementById('hydrogen-article-page-size');
+        if (hydrogenPrev) {
+            hydrogenPrev.addEventListener('click', () => {
+                if (hydrogenArticlePage > 1) {
+                    hydrogenArticlePage -= 1;
+                    loadHydrogenArticles();
+                }
+            });
+        }
+        if (hydrogenNext) {
+            hydrogenNext.addEventListener('click', () => {
+                if (hydrogenArticlePage < hydrogenArticleTotalPages) {
+                    hydrogenArticlePage += 1;
+                    loadHydrogenArticles();
+                }
+            });
+        }
+        if (hydrogenReload) {
+            hydrogenReload.addEventListener('click', () => {
+                hydrogenArticlePage = 1;
+                loadHydrogenArticles();
+            });
+        }
+        if (hydrogenChannelSelect) {
+            hydrogenChannelSelect.addEventListener('change', () => {
+                hydrogenArticlePage = 1;
+                loadHydrogenArticles();
+            });
+        }
+        if (hydrogenPageSizeInput) {
+            hydrogenPageSizeInput.addEventListener('change', () => {
+                hydrogenArticlePage = 1;
+                loadHydrogenArticles();
+            });
+        }
+        ['hydrogen-filter-date-from', 'hydrogen-filter-date-to', 'hydrogen-filter-channel', 'hydrogen-filter-title', 'hydrogen-filter-link'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', filterHydrogenArticleRows);
+            }
+        });
+
+        const classicStart = document.getElementById('classic-start-btn');
+        if (classicStart) {
+            classicStart.addEventListener('click', () => {
+                classicPage = 1;
+                startClassicExtractor();
+            });
+        }
+        const classicReset = document.getElementById && document.getElementById('classic-reset-btn');
+        if (classicReset) {
+            classicReset.addEventListener('click', () => {
+                if (!confirm('确定要重置所有经典项目记录吗？此操作会清空 projects_classic 并重置已提取标记。')) {
+                    return;
+                }
+                fetch('/api/hydrogen/projects/classic/reset', {
+                    method: 'POST'
+                }).then(resp => {
+                    if (!resp.ok) {
+                        return resp.json().then(j => {
+                            throw new Error(j.error || '重置失败');
+                        });
+                    }
+                }).then(() => {
+                    classicPage = 1;
+                    loadClassicProjects();
+                    alert('经典项目记录已重置。');
+                }).catch(err => {
+                    alert('重置经典项目记录失败：' + (err.message || err));
+                });
+            });
+        }
+        const classicPrev = document.getElementById('classic-prev');
+        const classicNext = document.getElementById('classic-next');
+        const classicReload = document.getElementById('classic-reload');
+        const classicChannelSelect = document.getElementById('classic-channel-filter');
+        const classicQualitySelect = document.getElementById('classic-quality-filter');
+        const classicPageSizeInput = document.getElementById('classic-page-size');
+        if (classicPrev) {
+            classicPrev.addEventListener('click', () => {
+                if (classicPage > 1) {
+                    classicPage -= 1;
+                    loadClassicProjects();
+                }
+            });
+        }
+        if (classicNext) {
+            classicNext.addEventListener('click', () => {
+                if (classicPage < classicTotalPages) {
+                    classicPage += 1;
+                    loadClassicProjects();
+                }
+            });
+        }
+        if (classicReload) {
+            classicReload.addEventListener('click', () => {
+                classicPage = 1;
+                loadClassicProjects();
+            });
+        }
+        if (classicChannelSelect) {
+            classicChannelSelect.addEventListener('change', () => {
+                classicPage = 1;
+                loadClassicProjects();
+            });
+        }
+        if (classicQualitySelect) {
+            classicQualitySelect.addEventListener('change', () => {
+                classicPage = 1;
+                loadClassicProjects();
+            });
+        }
+        if (classicPageSizeInput) {
+            classicPageSizeInput.addEventListener('change', () => {
+                classicPage = 1;
+                loadClassicProjects();
+            });
+        }
+        ['classic-filter-date-from', 'classic-filter-date-to', 'classic-filter-channel', 'classic-filter-name', 'classic-filter-stage', 'classic-filter-capacity-min', 'classic-filter-capacity-max', 'classic-filter-investment-min', 'classic-filter-investment-max', 'classic-filter-quality', 'classic-filter-link'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', filterClassicProjectRows);
+            }
+        });
+
+        document.getElementById('collector-captcha-submit').addEventListener('click', () => submitCaptchaFrom('collector-captcha-code'));
+        document.getElementById('extract-captcha-submit').addEventListener('click', () => submitCaptchaFrom('extract-captcha-code'));
+
+        document.getElementById('collector-captcha-code').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitCaptchaFrom('collector-captcha-code');
+            }
+        });
+        document.getElementById('extract-captcha-code').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                submitCaptchaFrom('extract-captcha-code');
+            }
+        });
+
+        // “刷新详情” 按钮：刷新文件列表并重新加载数据
+        document.getElementById('detail-reload-btn').addEventListener('click', loadDetailFiles);
+        document.getElementById('detail-full-view-btn').addEventListener('click', () => {
+            const select = document.getElementById('detail-file-select');
+            const filename = select.value;
+            if (!filename) {
+                alert('请先选择详情文件。');
+                return;
+            }
+            const url = '/details/full?file=' + encodeURIComponent(filename);
+            window.open(url, '_blank');
+        });
+
+        // 列宽拖拽
+        (function initResizer() {
+            const left = document.getElementById('col-left');
+            const right = document.getElementById('col-right');
+            const resizer = document.getElementById('col-resizer');
+            if (!left || !right || !resizer) return;
+
+            let dragging = false;
+            let startX = 0;
+            let startLeftWidth = 0;
+
+            resizer.addEventListener('mousedown', (e) => {
+                dragging = true;
+                startX = e.clientX;
+                startLeftWidth = left.getBoundingClientRect().width;
+                document.body.style.userSelect = 'none';
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                const dx = e.clientX - startX;
+                const newWidth = Math.max(260, Math.min(startLeftWidth + dx, window.innerWidth - 380));
+                left.style.flex = '0 0 ' + newWidth + 'px';
+                right.style.flex = '1 1 auto';
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (dragging) {
+                    dragging = false;
+                    document.body.style.userSelect = '';
+                }
+            });
+        })();
+
+        // 周期性轮询
+        pollStatus();
+        pollCaptcha();
+        pollHydrogenStatus();
+        setInterval(pollStatus, 1000);
+        setInterval(pollCaptcha, 1000);
+        setInterval(pollHydrogenStatus, 2000);
+        loadHydrogenArticles();
+        loadClassicProjects();
+        pollClassicStatus();
+        setInterval(pollClassicStatus, 3000);
+
+    });
+</script>
+</body>
+</html>

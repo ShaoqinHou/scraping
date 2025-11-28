@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>详情结果（完整字段视图）</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            color: #333;
+        }
+        header {
+            background: #2b6cb0;
+            color: #fff;
+            padding: 12px 20px;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 18px;
+        }
+        main {
+            padding: 12px 16px 20px;
+        }
+        section {
+            background: #fff;
+            border-radius: 8px;
+            padding: 12px 16px 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .status-line {
+            font-size: 12px;
+            margin-top: 6px;
+            color: #444;
+        }
+        .table-scroll {
+            max-height: 560px;
+            overflow: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: #fff;
+            margin-top: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 3px 4px;
+            text-align: left;
+        }
+        th {
+            background: #edf2f7;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        thead tr.filter-row th {
+            background: #f7fafc;
+            position: sticky;
+            top: 24px;
+            z-index: 1;
+        }
+        tbody tr:nth-child(even) {
+            background: #f7fafc;
+        }
+        tbody tr:hover {
+            background: #e6fffa;
+        }
+        .filter-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 2px 3px;
+            font-size: 11px;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>详情结果（完整字段视图）</h1>
+</header>
+<main>
+    <section>
+        <div class="status-line" id="detail-full-info">正在加载...</div>
+        <div class="table-scroll">
+            <table id="detail-full-table">
+                <thead>
+                <tr id="detail-full-header"></tr>
+                <tr id="detail-full-filter-row" class="filter-row"></tr>
+                </thead>
+                <tbody id="detail-full-tbody"></tbody>
+            </table>
+        </div>
+    </section>
+</main>
+<script>
+    let detailFullHeader = [];
+    let detailFullRows = [];
+
+    function loadDetailFull() {
+        const info = document.getElementById('detail-full-info');
+        const params = new URLSearchParams(window.location.search);
+        const file = params.get('file');
+        if (!file) {
+            info.textContent = '缺少 file 参数，请从主页面“4. 详情结果”点击“完整字段视图”进入。';
+            return;
+        }
+        info.textContent = '正在加载：' + file;
+        fetch('/api/detail-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file, keywords: [], exclude: [] })
+        })
+            .then(resp => resp.json())
+            .then(data => {
+                detailFullHeader = data.header || [];
+                detailFullRows = data.rows || [];
+                renderDetailFullTable();
+                info.textContent = `文件：${file}，记录数：${detailFullRows.length} 条。`;
+            })
+            .catch(err => {
+                console.error('加载完整详情数据失败：', err);
+                info.textContent = '加载失败：' + (err.message || err);
+            });
+    }
+
+    function renderDetailFullTable() {
+        const headerRow = document.getElementById('detail-full-header');
+        const filterRow = document.getElementById('detail-full-filter-row');
+        const tbody = document.getElementById('detail-full-tbody');
+        headerRow.innerHTML = '';
+        filterRow.innerHTML = '';
+        tbody.innerHTML = '';
+        detailFullHeader.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            headerRow.appendChild(th);
+            const fth = document.createElement('th');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'filter-input';
+            input.dataset.col = h;
+            input.placeholder = '筛选...';
+            fth.appendChild(input);
+            filterRow.appendChild(fth);
+        });
+        detailFullRows.forEach(row => {
+            const tr = document.createElement('tr');
+            detailFullHeader.forEach(h => {
+                const td = document.createElement('td');
+                td.textContent = row[h] || '';
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+        setupDetailFullFilterListeners();
+    }
+
+    function filterDetailFullRows() {
+        const tbody = document.getElementById('detail-full-tbody');
+        const inputs = Array.from(document.querySelectorAll('#detail-full-filter-row input.filter-input'));
+        const filters = {};
+        inputs.forEach(input => {
+            const val = (input.value || '').trim().toLowerCase();
+            if (val) {
+                filters[input.dataset.col] = val;
+            }
+        });
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            let visible = true;
+            if (Object.keys(filters).length) {
+                detailFullHeader.forEach((col, idx) => {
+                    if (!visible) return;
+                    const fv = filters[col];
+                    if (!fv) return;
+                    const text = (cells[idx].textContent || '').trim().toLowerCase();
+                    if (!text.includes(fv)) {
+                        visible = false;
+                    }
+                });
+            }
+            row.style.display = visible ? '' : 'none';
+        });
+    }
+
+    function setupDetailFullFilterListeners() {
+        const inputs = Array.from(document.querySelectorAll('#detail-full-filter-row input.filter-input'));
+        inputs.forEach(input => {
+            input.addEventListener('input', filterDetailFullRows);
+        });
+    }
+
+    window.addEventListener('DOMContentLoaded', loadDetailFull);
+</script>
+</body>
+</html>
+

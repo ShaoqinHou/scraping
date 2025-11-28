@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>氢能项目数据库 - 采集看板</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        header {
+            background: #2b6cb0;
+            color: #fff;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        header nav {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        header nav a {
+            color: #fff;
+            text-decoration: none;
+            margin-left: 20px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        header nav a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        header nav a.active {
+            font-weight: bold;
+            opacity: 1;
+        }
+
+        section h2 {
+            margin: 0 0 8px;
+            font-size: 18px;
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        section h2 span.step-index {
+            font-weight: 600;
+            color: #2b6cb0;
+        }
+
+        section p.desc {
+            margin: 4px 0 12px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .form-row label {
+            white-space: nowrap;
+        }
+
+        .form-row input[type="number"],
+        .form-row input[type="text"] {
+            padding: 4px 6px;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            min-width: 60px;
+        }
+
+        .form-row input[type="checkbox"] {
+            margin-right: 4px;
+        }
+
+        button {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid #2b6cb0;
+            background: #2b6cb0;
+            color: #fff;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        button.secondary {
+            background: #fff;
+            color: #2b6cb0;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        .status-line {
+            font-size: 13px;
+            margin-top: 8px;
+            color: #444;
+        }
+
+        .status-line strong {
+            color: #2b6cb0;
+        }
+
+        .captcha-panel {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+            font-size: 13px;
+        }
+
+        .captcha-panel img {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 4px;
+            background: #fff;
+            display: none;
+        }
+
+        .captcha-panel input[type="text"] {
+            width: 80px;
+        }
+
+        .tag-section-title {
+            font-size: 13px;
+            margin-top: 4px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .tag-container {
+            min-height: 26px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 6px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            background: #fafafa;
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            background: #e2e8f0;
+            color: #1a202c;
+            border-radius: 999px;
+            padding: 2px 6px;
+            font-size: 12px;
+        }
+
+        .tag-label {
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tag-remove {
+            margin-left: 4px;
+            border: none;
+            background: transparent;
+            color: #4a5568;
+            cursor: pointer;
+            padding: 0 2px;
+            font-size: 12px;
+            line-height: 1;
+        }
+
+        .tag-input-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+            font-size: 12px;
+        }
+
+        .tag-input-row input[type="text"] {
+            flex: 0 0 150px;
+        }
+
+        .tag-input-row span.hint {
+            color: #777;
+        }
+
+        .filter-input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 2px 4px;
+            font-size: 11px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+
+        th,
+        td {
+            border: 1px solid #e2e8f0;
+            padding: 4px 6px;
+            text-align: left;
+        }
+
+        th {
+            background: #edf2f7;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f7fafc;
+        }
+
+        tbody tr:hover {
+            background: #e6fffa;
+        }
+
+        .small {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .detail-wide {
+            max-height: 420px;
+            overflow: auto;
+        }
+
+        .detail-wide table {
+            min-width: 900px;
+        }
+
+        .table-scroll {
+            max-height: 380px;
+            overflow: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            background: #fff;
+            margin-top: 4px;
+        }
+
+        .section-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        #layout {
+            display: flex;
+            gap: 0;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding-top: 0;
+            padding-bottom: 0;
+            overflow-y: auto;
+        }
+
+        .column-left {
+            flex: 0 0 38%;
+            min-width: 280px;
+            padding-right: 16px;
+            padding-left: 4px;
+        }
+
+        .column-right {
+            flex: 1 1 auto;
+            min-width: 360px;
+            padding-left: 16px;
+            padding-right: 4px;
+        }
+
+        #col-resizer {
+            position: relative;
+            width: 10px;
+            /* 加大点击区域 */
+            cursor: col-resize;
+            background: transparent;
+            /* 视觉上只显示中间细线 */
+        }
+
+        #col-resizer::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            background: #cbd5e0;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>氢能项目数据库</h1>
+        <nav>
+            <a href="/">北极星项目看板</a>
+            <a href="/collector" class="active">内蒙古政府项目看板</a>
+        </nav>
+    </header>
+    <main>
+        <div id="layout">
+            <div id="col-left" class="column column-left">
+                <!-- 1. 列表采集 -->
+                <section id="section-collector">
+                    <div class="section-header-row">
+                        <h2><span class="step-index">1.</span> 列表采集</h2>
+                        <div class="small">首先采集项目列表，然后再进行筛选和详情提取。</div>
+                    </div>
+                    <p class="desc">此步骤从网站抓取项目列表数据并保存到 <code>inner_mongolia_projects.csv</code>。</p>
+                    <div class="form-row">
+                        <label>最大页数：
+                            <input type="number" id="collector-max-pages" min="0" value="0">
+                            <span class="small">(0 表示全部)</span>
+                        </label>
+                        <label>最大打开标签数：
+                            <input type="number" id="collector-max-tabs" min="1" value="20">
+                        </label>
+                        <label>每秒打开页数：
+                            <input type="number" id="collector-pages-per-second" min="0.1" step="0.1" value="5">
+                        </label>
+                        <label>
+                            <input type="checkbox" id="collector-show-browser" checked> 显示浏览器
+                        </label>
+                        <label>
+                            <input type="checkbox" id="collector-retry"> 仅重试上次失败页面
+                        </label>
+                        <button id="collector-start-btn">开始列表采集</button>
+                    </div>
+                    <div class="captcha-panel">
+                        <span>列表验证码：</span>
+                        <img id="collector-captcha-image" alt="验证码">
+                        <input type="text" id="collector-captcha-code" placeholder="输入验证码">
+                        <button type="button" class="secondary" id="collector-captcha-submit">提交验证码</button>
+                        <span class="small">可在弹出的浏览器中直接输入验证码，也可以在此处提交。</span>
+                    </div>
+                    <div class="status-line" id="collector-status">
+                        状态：<strong id="collector-status-text">准备就绪</strong>
+                    </div>
+                </section>
+
+                <!-- 2. 数据筛选 -->
+                <section id="section-filter">
+                    <div class="section-header-row">
+                        <h2><span class="step-index">2.</span> 数据筛选</h2>
+                        <div class="small">对“1. 列表采集”得到的项目进行关键词筛选和勾选。</div>
+                    </div>
+
+                    <div>
+                        <div class="tag-section-title">关键词标签</div>
+                        <div id="keyword-tags" class="tag-container"></div>
+                        <div class="tag-input-row">
+                            <input type="text" id="keyword-input" placeholder="输入后按回车或点击＋">
+                            <button type="button" class="secondary" id="keyword-add-btn">＋</button>
+                            <span class="hint">用于匹配项目文本，可添加多个。</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 8px;">
+                        <div class="tag-section-title">排除词标签（可选）</div>
+                        <div id="exclude-tags" class="tag-container"></div>
+                        <div class="tag-input-row">
+                            <input type="text" id="exclude-input" placeholder="输入后按回车或点击＋">
+                            <button type="button" class="secondary" id="exclude-add-btn">＋</button>
+                            <span class="hint">包含这些词的项目将被排除。</span>
+                        </div>
+                    </div>
+
+                    <div class="flex-between" style="margin-top: 8px;">
+                        <div class="small" id="filter-summary">
+                            当前筛选项目：0 条，已勾选：0 条（勾选的项目将用于“3. 详情提取”；若未勾选则对全部筛选结果提取）。
+                        </div>
+                        <div>
+                            <button type="button" class="secondary" id="filter-refresh-btn">刷新数据</button>
+                            <button type="button" class="secondary" id="filter-toggle-select-all-btn">全选/取消全选</button>
+                        </div>
+                    </div>
+
+                    <div class="table-scroll">
+                        <table id="filter-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">选中</th>
+                                    <th>cbsnum</th>
+                                    <th>项目名称</th>
+                                    <th>审批事项</th>
+                                    <th>审批结果</th>
+                                </tr>
+                            </thead>
+                            <tbody id="filter-tbody">
+                                <!-- 动态填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <div id="col-resizer"></div>
+
+            <div id="col-right" class="column column-right">
+                <!-- 3. 详情提取 -->
+                <section id="section-extractor">
+                    <div class="section-header-row">
+                        <h2><span class="step-index">3.</span> 详情提取</h2>
+                        <div class="small">基于“2. 数据筛选”的结果，对选定项目打开详情页并提取审批记录。</div>
+                    </div>
+                    <p class="desc" id="extract-summary">
+                        当前将基于“2. 数据筛选”的结果提取详情数据。
+                    </p>
+
+                    <div class="form-row">
+                        <label>最大项目数：
+                            <input type="number" id="extract-max-projects" min="0" value="0">
+                            <span class="small">(0 表示全部)</span>
+                        </label>
+                        <label>最大并发项目数：
+                            <input type="number" id="extract-max-concurrent" min="1" value="5">
+                        </label>
+                        <label>最大打开标签数：
+                            <input type="number" id="extract-max-tabs" min="1" value="20">
+                        </label>
+                        <label>每秒打开页数：
+                            <input type="number" id="extract-pages-per-second" min="0.1" step="0.1" value="5">
+                        </label>
+                        <label>
+                            <input type="checkbox" id="extract-show-browser" checked> 显示浏览器
+                        </label>
+                        <button id="extract-start-btn">开始详情提取</button>
+                    </div>
+                    <div class="form-row">
+                        <label>
+                            <input type="checkbox" id="extract-use-ai">
+                            启用 AI 后处理（保存新文件 *_ai.csv）
+                        </label>
+                        <label>AI 处理行数：
+                            <input type="number" id="extract-ai-max-rows" min="0" value="0">
+                            <span class="small">(0 表示全部)</span>
+                        </label>
+                        <label>AI 并发：
+                            <input type="number" id="extract-ai-max-workers" min="1" value="4">
+                        </label>
+                        <label>AI 模型：
+                            <input type="text" id="extract-ai-model" value="deepseek-ai/DeepSeek-V3">
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>SiliconFlow API Key：
+                            <input type="text" id="extract-ai-key" style="min-width:260px;" placeholder="仅首次需要填写">
+                        </label>
+                        <button type="button" class="secondary" id="extract-ai-save-btn">保存 Key/模型</button>
+                    </div>
+
+                    <div class="captcha-panel">
+                        <span>详情验证码：</span>
+                        <img id="extract-captcha-image" alt="验证码">
+                        <input type="text" id="extract-captcha-code" placeholder="输入验证码">
+                        <button type="button" class="secondary" id="extract-captcha-submit">提交验证码</button>
+                        <span class="small">可在弹出的浏览器中直接输入验证码，也可以在此处提交。</span>
+                    </div>
+
+                    <div class="status-line" id="extractor-status">
+                        状态：<strong id="extractor-status-text">待机</strong>
+                    </div>
+                </section>
+
+                <!-- 4. 详情结果 -->
+                <section id="section-detail">
+                    <div class="section-header-row">
+                        <h2><span class="step-index">4.</span> 详情结果</h2>
+                        <div class="small">查看和筛选“3. 详情提取”生成的详细审批数据（过滤条件与步骤 2 共用）。</div>
+                    </div>
+
+                    <div class="form-row">
+                        <label>选择详情文件：
+                            <select id="detail-file-select"></select>
+                        </label>
+                        <button type="button" class="secondary" id="detail-reload-btn">刷新详情</button>
+                        <button type="button" class="secondary" id="detail-full-view-btn">完整字段视图</button>
+                    </div>
+
+                    <div style="margin-top: 8px;">
+                        <div class="tag-section-title">详情关键词标签（与步骤 2 共用）</div>
+                        <div id="detail-keyword-tags" class="tag-container"></div>
+                        <div class="tag-input-row">
+                            <input type="text" id="detail-keyword-input" placeholder="输入后按回车或点击＋">
+                            <button type="button" class="secondary" id="detail-keyword-add-btn">＋</button>
+                            <span class="hint">用于筛选详情文本，可添加多个。</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 8px;">
+                        <div class="tag-section-title">详情排除词标签（与步骤 2 共用）</div>
+                        <div id="detail-exclude-tags" class="tag-container"></div>
+                        <div class="tag-input-row">
+                            <input type="text" id="detail-exclude-input" placeholder="输入后按回车或点击＋">
+                            <button type="button" class="secondary" id="detail-exclude-add-btn">＋</button>
+                            <span class="hint">包含这些词的详情记录将被排除。</span>
+                        </div>
+                    </div>
+
+                    <div class="detail-wide">
+                        <table id="detail-table">
+                            <thead>
+                                <tr id="detail-header-row"></tr>
+                                <tr id="detail-filter-row"></tr>
+                            </thead>
+                            <tbody id="detail-tbody">
+                                <!-- 动态填充 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="status-line small" id="detail-summary">
+                        详情记录：0 条。
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 全局状态
+        let keywordTags = [];
+        let excludeTags = [];
+        let filteredRows = [];
+        const selectedCbsnums = new Set();
+        let lastCollectorStage = null;
+        let lastExtractorStage = null;
+
+        function saveFilterState() {
+            try {
+                const state = { keywords: keywordTags, exclude: excludeTags, selected: Array.from(selectedCbsnums) };
+                localStorage.setItem('project_filter_state', JSON.stringify(state));
+            } catch (e) {
+                console.warn('无法保存筛选状态：', e);
+            }
+        }
+
+        // 返回当前筛选结果中“已勾选”的 cbsnum 列表
+        function getSelectedCbsnums() {
+            const inView = new Set();
+            filteredRows.forEach(row => {
+                const cbs = (row.cbsnum || '').trim();
+                if (cbs && selectedCbsnums.has(cbs)) {
+                    inView.add(cbs);
+                }
+            });
+            return Array.from(inView);
+        }
+
+        function loadFilterState() {
+            try {
+                const raw = localStorage.getItem('project_filter_state');
+                if (!raw) return;
+                const state = JSON.parse(raw);
+                keywordTags = state.keywords || [];
+                excludeTags = state.exclude || [];
+                (state.selected || []).forEach(c => selectedCbsnums.add(c));
+            } catch (e) {
+                console.warn('无法加载筛选状态：', e);
+            }
+        }
+
+        function renderTags() {
+            const kwContainers = [
+                document.getElementById('keyword-tags'),
+                document.getElementById('detail-keyword-tags')
+            ];
+            const exContainers = [
+                document.getElementById('exclude-tags'),
+                document.getElementById('detail-exclude-tags')
+            ];
+
+            kwContainers.forEach(container => {
+                if (!container) return;
+                container.innerHTML = '';
+                keywordTags.forEach((tag, idx) => {
+                    const pill = document.createElement('span');
+                    pill.className = 'tag';
+
+                    const label = document.createElement('span');
+                    label.className = 'tag-label';
+                    label.textContent = tag;
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'tag-remove';
+                    btn.textContent = '×';
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        keywordTags.splice(idx, 1);
+                        saveFilterState();
+                        renderTags();
+                        reloadFilterData();
+                        reloadDetailData();
+                    });
+
+                    pill.appendChild(label);
+                    pill.appendChild(btn);
+                    container.appendChild(pill);
+                });
+            });
+
+            exContainers.forEach(container => {
+                if (!container) return;
+                container.innerHTML = '';
+                excludeTags.forEach((tag, idx) => {
+                    const pill = document.createElement('span');
+                    pill.className = 'tag';
+
+                    const label = document.createElement('span');
+                    label.className = 'tag-label';
+                    label.textContent = tag;
+
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'tag-remove';
+                    btn.textContent = '×';
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        excludeTags.splice(idx, 1);
+                        saveFilterState();
+                        renderTags();
+                        reloadFilterData();
+                        reloadDetailData();
+                    });
+
+                    pill.appendChild(label);
+                    pill.appendChild(btn);
+                    container.appendChild(pill);
+                });
+            });
+        }
+
+        function addKeywordTagFromInput() {
+            const input = document.getElementById('keyword-input');
+            const value = (input.value || '').trim();
+            if (!value) return;
+            if (!keywordTags.includes(value)) {
+                keywordTags.push(value);
+                input.value = '';
+                saveFilterState();
+                renderTags();
+                reloadFilterData();
+            }
+        }
+
+        function addExcludeTagFromInput() {
+            const input = document.getElementById('exclude-input');
+            const value = (input.value || '').trim();
+            if (!value) return;
+            if (!excludeTags.includes(value)) {
+                excludeTags.push(value);
+                input.value = '';
+                saveFilterState();
+                renderTags();
+                reloadFilterData();
+            }
+        }
+
+        function addDetailKeywordTagFromInput() {
+            const input = document.getElementById('detail-keyword-input');
+            const value = (input.value || '').trim();
+            if (!value) return;
+            if (!keywordTags.includes(value)) {
+                keywordTags.push(value);
+                input.value = '';
+                saveFilterState();
+                renderTags();
+                reloadFilterData();
+                reloadDetailData();
+            }
+        }
+
+        function addDetailExcludeTagFromInput() {
+            const input = document.getElementById('detail-exclude-input');
+            const value = (input.value || '').trim();
+            if (!value) return;
+            if (!excludeTags.includes(value)) {
+                excludeTags.push(value);
+                input.value = '';
+                saveFilterState();
+                renderTags();
+                reloadFilterData();
+                reloadDetailData();
+            }
+        }
+
+        function renderFilterTable() {
+            const tbody = document.getElementById('filter-tbody');
+            tbody.innerHTML = '';
+            filteredRows.forEach((row) => {
+                const tr = document.createElement('tr');
+                const cbs = (row.cbsnum || '').trim();
+
+                const tdCheck = document.createElement('td');
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'row-checkbox';
+                checkbox.dataset.cbsnum = cbs;
+                checkbox.checked = selectedCbsnums.has(cbs);
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        if (cbs) selectedCbsnums.add(cbs);
+                    } else {
+                        selectedCbsnums.delete(cbs);
+                    }
+                    saveFilterState();
+                    updateSelectionSummary();
+                });
+                tdCheck.appendChild(checkbox);
+                tr.appendChild(tdCheck);
+
+                const tdCbs = document.createElement('td');
+                tdCbs.textContent = cbs;
+                tr.appendChild(tdCbs);
+
+                const tdName = document.createElement('td');
+                tdName.textContent = row.name || '';
+                tr.appendChild(tdName);
+
+                const tdApproval = document.createElement('td');
+                tdApproval.textContent = row.approval || '';
+                tr.appendChild(tdApproval);
+
+                const tdResult = document.createElement('td');
+                tdResult.textContent = row.result || '';
+                tr.appendChild(tdResult);
+
+                tbody.appendChild(tr);
+            });
+            updateSelectionSummary();
+        }
+
+        function updateSelectionSummary() {
+            const total = filteredRows.length;
+            const selectedCount = getSelectedCbsnums().length;
+            const summary = document.getElementById('filter-summary');
+            summary.textContent =
+                `当前筛选项目：${total} 条，已勾选：${selectedCount} 条（勾选的项目将用于“3. 详情提取”；若未勾选则对全部筛选结果提取）。`;
+
+            const extractSummary = document.getElementById('extract-summary');
+            if (total === 0) {
+                extractSummary.textContent = '当前暂无可用项目，请先完成“1. 列表采集”，或调整筛选条件。';
+            } else if (selectedCount > 0) {
+                extractSummary.textContent = `本次将处理 ${selectedCount} 条项目（基于“2. 数据筛选”中已勾选的项目，总筛选 ${total} 条）。`;
+            } else {
+                extractSummary.textContent = `本次将处理 ${total} 条项目（基于“2. 数据筛选”的全部结果）。`;
+            }
+        }
+
+        function reloadFilterData() {
+            fetch('/api/data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    keywords: keywordTags,
+                    exclude: excludeTags,
+                    cbsnums: []  // 不在此处按 cbsnum 文本过滤
+                })
+            }).then(resp => resp.json())
+                .then(data => {
+                    filteredRows = data.rows || [];
+                    renderFilterTable();
+                }).catch(err => {
+                    console.error('加载筛选数据失败：', err);
+                });
+        }
+
+        function toggleSelectAll() {
+            const checkboxes = document.querySelectorAll('#filter-tbody .row-checkbox');
+            let allChecked = true;
+            checkboxes.forEach(cb => {
+                if (!cb.checked) allChecked = false;
+            });
+            if (allChecked) {
+                // 取消全选
+                checkboxes.forEach(cb => {
+                    cb.checked = false;
+                    const cbs = (cb.dataset.cbsnum || '').trim();
+                    if (cbs) selectedCbsnums.delete(cbs);
+                });
+            } else {
+                // 全选
+                checkboxes.forEach(cb => {
+                    cb.checked = true;
+                    const cbs = (cb.dataset.cbsnum || '').trim();
+                    if (cbs) selectedCbsnums.add(cbs);
+                });
+            }
+            saveFilterState();
+            updateSelectionSummary();
+        }
+
+        // 采集器 & 提取器状态轮询
+        function pollStatus() {
+            fetch('/api/status')
+                .then(resp => resp.json())
+                .then(data => {
+                    const collector = data.collector || {};
+                    const extractor = data.extractor || {};
+
+                    const cText = document.getElementById('collector-status-text');
+                    const eText = document.getElementById('extractor-status-text');
+
+                    let cMsg = collector.message || '';
+                    if (collector.total && collector.total > 0) {
+                        cMsg += `（${collector.current}/${collector.total}）`;
+                    }
+                    cText.textContent = cMsg || '准备就绪';
+
+                    let eMsg = extractor.message || '';
+                    if (extractor.total && extractor.total > 0) {
+                        eMsg += `（${extractor.current}/${extractor.total}）`;
+                    }
+                    eText.textContent = eMsg || '待机';
+
+                    const cStage = collector.stage || 'idle';
+                    const eStage = extractor.stage || 'idle';
+                    if (lastCollectorStage && lastCollectorStage !== 'idle' && cStage === 'idle') {
+                        reloadFilterData();
+                    }
+                    if (lastExtractorStage && lastExtractorStage !== 'idle' && eStage === 'idle') {
+                        loadDetailFiles();
+                    }
+                    lastCollectorStage = cStage;
+                    lastExtractorStage = eStage;
+                })
+                .catch(err => {
+                    console.error('获取状态失败：', err);
+                });
+        }
+
+        // 验证码轮询（列表 & 详情共用同一 CaptchaManager，仅 UI 分开）
+        function pollCaptcha() {
+            fetch('/captcha/status')
+                .then(resp => resp.json())
+                .then(data => {
+                    const hasImage = !!data.has_image;
+                    const src = '/captcha/captcha-image?_=' + Date.now();
+
+                    const img1 = document.getElementById('collector-captcha-image');
+                    const img2 = document.getElementById('extract-captcha-image');
+                    if (hasImage) {
+                        if (img1) {
+                            img1.src = src;
+                            img1.style.display = 'inline-block';
+                        }
+                        if (img2) {
+                            img2.src = src;
+                            img2.style.display = 'inline-block';
+                        }
+                    } else {
+                        if (img1) img1.style.display = 'none';
+                        if (img2) img2.style.display = 'none';
+                    }
+                })
+                .catch(err => {
+                    console.error('轮询验证码失败：', err);
+                });
+        }
+
+        function submitCaptchaFrom(inputId) {
+            const input = document.getElementById(inputId);
+            const code = (input.value || '').trim();
+            if (!code) {
+                alert('请输入验证码');
+                return;
+            }
+            fetch('/captcha/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: code })
+            }).then(resp => resp.json())
+                .then(data => {
+                    if (!data.ok) {
+                        alert('提交失败：' + (data.message || '未知错误'));
+                    } else {
+                        input.value = '';
+                    }
+                })
+                .catch(err => {
+                    console.error('提交验证码失败：', err);
+                });
+        }
+
+        function startCollector() {
+            const maxPages = parseInt(document.getElementById('collector-max-pages').value || '0', 10);
+            const maxTabs = parseInt(document.getElementById('collector-max-tabs').value || '0', 10);
+            const pps = parseFloat(document.getElementById('collector-pages-per-second').value || '0');
+            const showBrowser = document.getElementById('collector-show-browser').checked;
+            const retry = document.getElementById('collector-retry').checked;
+
+            const payload = {
+                retry: retry,
+                max_pages: maxPages > 0 ? maxPages : null,
+                headless: !showBrowser,
+                max_open_tabs: maxTabs > 0 ? maxTabs : null,
+                pages_per_second: pps > 0 ? pps : null
+            };
+
+            document.getElementById('collector-start-btn').disabled = true;
+
+            fetch('/api/collector', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(resp => {
+                if (!resp.ok) {
+                    return resp.json().then(j => {
+                        throw new Error(j.message || '启动失败');
+                    });
+                }
+            }).catch(err => {
+                alert('启动列表采集失败：' + err.message);
+            }).finally(() => {
+                document.getElementById('collector-start-btn').disabled = false;
+            });
+        }
+
+        function startExtractor() {
+            const total = filteredRows.length;
+            const selectedList = getSelectedCbsnums();
+            const selected = selectedList.length;
+            const targetCount = selected > 0 ? selected : total;
+            if (!targetCount) {
+                alert('当前没有可提取的项目，请先完成“1. 列表采集”并在“2. 数据筛选”中选择数据。');
+                return;
+            }
+
+            const maxProjects = parseInt(document.getElementById('extract-max-projects').value || '0', 10);
+            const maxConcurrent = parseInt(document.getElementById('extract-max-concurrent').value || '0', 10);
+            const maxTabs = parseInt(document.getElementById('extract-max-tabs').value || '0', 10);
+            const pps = parseFloat(document.getElementById('extract-pages-per-second').value || '0');
+            const showBrowser = document.getElementById('extract-show-browser').checked;
+            const useAI = document.getElementById('extract-use-ai').checked;
+            const aiMaxRows = parseInt(document.getElementById('extract-ai-max-rows').value || '0', 10);
+            const aiMaxWorkers = parseInt(document.getElementById('extract-ai-max-workers').value || '4', 10);
+            const aiModel = (document.getElementById('extract-ai-model').value || '').trim();
+
+            const payload = {
+                csv_file: 'inner_mongolia_projects.csv',
+                keywords: keywordTags,
+                cbsnums: selected > 0 ? selectedList : null,
+                max_projects: maxProjects > 0 ? maxProjects : null,
+                headless: !showBrowser,
+                max_concurrent: maxConcurrent > 0 ? maxConcurrent : null,
+                max_open_tabs: maxTabs > 0 ? maxTabs : null,
+                pages_per_second: pps > 0 ? pps : null,
+                use_ai: useAI,
+                ai_max_rows: aiMaxRows > 0 ? aiMaxRows : null,
+                ai_max_workers: aiMaxWorkers > 0 ? aiMaxWorkers : 4,
+                ai_model: aiModel || null
+            };
+
+            document.getElementById('extract-start-btn').disabled = true;
+
+            fetch('/api/extractor', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(resp => {
+                if (!resp.ok) {
+                    return resp.json().then(j => {
+                        throw new Error(j.message || '启动失败');
+                    });
+                }
+            }).catch(err => {
+                alert('启动详情提取失败：' + err.message);
+            }).finally(() => {
+                document.getElementById('extract-start-btn').disabled = false;
+            });
+        }
+
+        function loadAiConfig() {
+            fetch('/api/config/siliconflow')
+                .then(resp => resp.json())
+                .then(cfg => {
+                    const keyInput = document.getElementById('extract-ai-key');
+                    const modelInput = document.getElementById('extract-ai-model');
+                    if (cfg.key_masked && keyInput) {
+                        keyInput.placeholder = `已保存：${cfg.key_masked}`;
+                        keyInput.value = '';
+                    }
+                    if (cfg.model && modelInput) {
+                        modelInput.value = cfg.model;
+                    }
+                })
+                .catch(err => console.error('加载 AI 配置失败：', err));
+        }
+
+        function saveAiConfig() {
+            const keyInput = document.getElementById('extract-ai-key');
+            const modelInput = document.getElementById('extract-ai-model');
+            const payload = {};
+            const key = (keyInput.value || '').trim();
+            if (key) payload.api_key = key;
+            const model = (modelInput.value || '').trim();
+            if (model) payload.model = model;
+            if (!Object.keys(payload).length) {
+                alert('请输入 API Key 或模型再保存。');
+                return;
+            }
+            fetch('/api/config/siliconflow', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(resp => resp.json())
+                .then(() => {
+                    if (keyInput) keyInput.value = '';
+                    loadAiConfig();
+                    alert('已保存 AI 配置。');
+                })
+                .catch(err => alert('保存 AI 配置失败：' + (err.message || err)));
+        }
+
+        // 详情结果加载
+        function loadDetailFiles() {
+            fetch('/api/detail-files')
+                .then(resp => resp.json())
+                .then(data => {
+                    const select = document.getElementById('detail-file-select');
+                    select.innerHTML = '';
+                    (data.files || []).forEach(f => {
+                        const opt = document.createElement('option');
+                        opt.value = f;
+                        opt.textContent = f;
+                        select.appendChild(opt);
+                    });
+                    // 更新列表后自动尝试加载一次详情
+                    reloadDetailData();
+                })
+                .catch(err => {
+                    console.error('加载详情文件列表失败：', err);
+                });
+        }
+
+        function reloadDetailData() {
+            const select = document.getElementById('detail-file-select');
+            const filename = select.value;
+            if (!filename) {
+                document.getElementById('detail-header-row').innerHTML = '';
+                document.getElementById('detail-tbody').innerHTML = '';
+                document.getElementById('detail-summary').textContent = '详情记录：0 条。';
+                return;
+            }
+
+            fetch('/api/detail-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    file: filename,
+                    keywords: keywordTags,
+                    exclude: excludeTags
+                })
+            }).then(resp => resp.json())
+                .then(data => {
+                    const header = data.header || [];
+                    const rows = data.rows || [];
+                    window.detailHeader = header;
+                    window.detailRows = rows;
+                    renderDetailSummaryTable();
+                })
+                .catch(err => {
+                    console.error('加载详情数据失败：', err);
+                });
+        }
+
+        function renderDetailSummaryTable() {
+            const headerRow = document.getElementById('detail-header-row');
+            const filterRow = document.getElementById('detail-filter-row');
+            const tbody = document.getElementById('detail-tbody');
+            headerRow.innerHTML = '';
+            if (filterRow) {
+                filterRow.innerHTML = '';
+            }
+            tbody.innerHTML = '';
+            const header = window.detailHeader || [];
+            const rows = window.detailRows || [];
+            const colsConfig = [
+                { key: 'AI摘要', label: 'AI摘要', type: 'text', filterId: 'detail-filter-ai-summary' },
+                { key: 'AI要点', label: 'AI要点', type: 'text', filterId: 'detail-filter-ai-points' },
+                { key: '审批日期', label: '审批日期', type: 'date', filterId: 'detail-filter-date' },
+                { key: '审批部门', label: '审批部门', type: 'text', filterId: 'detail-filter-dept' },
+                { key: '审批文号', label: '审批文号', type: 'text', filterId: 'detail-filter-docno' },
+                { key: '审批事项', label: '审批事项', type: 'text', filterId: 'detail-filter-item' },
+                { key: '审批结果', label: '审批结果', type: 'text', filterId: 'detail-filter-result' },
+                { key: '申报单位', label: '申报单位', type: 'text', filterId: 'detail-filter-owner' },
+                { key: '项目代码', label: '项目代码', type: 'text', filterId: 'detail-filter-project-code' },
+                { key: '项目名称', label: '项目名称', type: 'text', filterId: 'detail-filter-project-name' },
+                { key: '项目类型', label: '项目类型', type: 'text', filterId: 'detail-filter-project-type' },
+                { key: '附件原始数据', label: '附件原始数据', type: 'text', filterId: 'detail-filter-attach-raw' },
+                { key: '附件名称', label: '附件名称', type: 'text', filterId: 'detail-filter-attach-name' },
+                { key: '附件链接', label: '附件链接', type: 'text', filterId: 'detail-filter-attach-link' },
+            ];
+            const usedCols = colsConfig.filter(c => header.includes(c.key));
+            if (!usedCols.length) {
+                // 回退到原始表头
+                header.forEach(h => {
+                    const th = document.createElement('th');
+                    th.textContent = h;
+                    headerRow.appendChild(th);
+                });
+                rows.forEach(row => {
+                    const tr = document.createElement('tr');
+                    header.forEach(h => {
+                        const td = document.createElement('td');
+                        td.textContent = row[h] || '';
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+                document.getElementById('detail-summary').textContent = `详情记录：${rows.length} 条。`;
+                return;
+            }
+            // summary header
+            usedCols.forEach(c => {
+                const th = document.createElement('th');
+                th.textContent = c.label;
+                headerRow.appendChild(th);
+            });
+            // filter row
+            if (filterRow) {
+                usedCols.forEach(c => {
+                    const th = document.createElement('th');
+                    const input = document.createElement('input');
+                    input.className = 'filter-input';
+                    input.id = c.filterId;
+                    if (c.type === 'date') {
+                        input.type = 'date';
+                    } else {
+                        input.type = 'text';
+                        input.placeholder = '包含...';
+                    }
+                    th.appendChild(input);
+                    filterRow.appendChild(th);
+                });
+            }
+            // rows
+            rows.forEach(row => {
+                const tr = document.createElement('tr');
+                usedCols.forEach(c => {
+                    const td = document.createElement('td');
+                    td.textContent = row[c.key] || '';
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            document.getElementById('detail-summary').textContent = `详情记录：${rows.length} 条。`;
+            setupDetailSummaryFilters(usedCols);
+        }
+
+        function setupDetailSummaryFilters(usedCols) {
+            const handler = () => filterDetailSummaryRows(usedCols);
+            usedCols.forEach(c => {
+                const el = document.getElementById(c.filterId);
+                if (el) {
+                    el.addEventListener('input', handler);
+                }
+            });
+        }
+
+        function filterDetailSummaryRows(usedCols) {
+            const tbody = document.getElementById('detail-tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const filters = {};
+            usedCols.forEach((c, idx) => {
+                const el = document.getElementById(c.filterId);
+                if (!el) return;
+                const val = (el.value || '').trim();
+                if (!val) return;
+                filters[idx] = { type: c.type, value: val.toLowerCase() };
+            });
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                let visible = true;
+                Object.keys(filters).forEach(k => {
+                    if (!visible) return;
+                    const idx = parseInt(k, 10);
+                    const f = filters[idx];
+                    const text = (cells[idx].textContent || '').trim();
+                    if (f.type === 'date') {
+                        // 单个日期输入时按“包含”过滤更直观
+                        if (!text.includes(f.value)) {
+                            visible = false;
+                        }
+                    } else {
+                        if (!text.toLowerCase().includes(f.value)) {
+                            visible = false;
+                        }
+                    }
+                });
+                row.style.display = visible ? '' : 'none';
+            });
+        }
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFilterState();
+            renderTags();
+            reloadFilterData();
+            loadDetailFiles();
+
+            document.getElementById('keyword-add-btn').addEventListener('click', addKeywordTagFromInput);
+            document.getElementById('exclude-add-btn').addEventListener('click', addExcludeTagFromInput);
+            document.getElementById('keyword-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addKeywordTagFromInput();
+                }
+            });
+            document.getElementById('exclude-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addExcludeTagFromInput();
+                }
+            });
+
+            document.getElementById('detail-keyword-add-btn').addEventListener('click', addDetailKeywordTagFromInput);
+            document.getElementById('detail-exclude-add-btn').addEventListener('click', addDetailExcludeTagFromInput);
+            document.getElementById('detail-keyword-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addDetailKeywordTagFromInput();
+                }
+            });
+            document.getElementById('detail-exclude-input').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addDetailExcludeTagFromInput();
+                }
+            });
+
+            document.getElementById('filter-refresh-btn').addEventListener('click', reloadFilterData);
+            document.getElementById('filter-toggle-select-all-btn').addEventListener('click', toggleSelectAll);
+
+            document.getElementById('collector-start-btn').addEventListener('click', startCollector);
+            document.getElementById('extract-start-btn').addEventListener('click', startExtractor);
+
+            document.getElementById('collector-captcha-submit').addEventListener('click', () => submitCaptchaFrom('collector-captcha-code'));
+            document.getElementById('extract-captcha-submit').addEventListener('click', () => submitCaptchaFrom('extract-captcha-code'));
+
+            document.getElementById('collector-captcha-code').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitCaptchaFrom('collector-captcha-code');
+                }
+            });
+            document.getElementById('extract-captcha-code').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    submitCaptchaFrom('extract-captcha-code');
+                }
+            });
+            const aiSaveBtn = document.getElementById('extract-ai-save-btn');
+            if (aiSaveBtn) {
+                aiSaveBtn.addEventListener('click', saveAiConfig);
+            }
+            loadAiConfig();
+
+            // “刷新详情” 按钮：刷新文件列表并重新加载数据
+            document.getElementById('detail-reload-btn').addEventListener('click', loadDetailFiles);
+            document.getElementById('detail-full-view-btn').addEventListener('click', () => {
+                const select = document.getElementById('detail-file-select');
+                const filename = select.value;
+                if (!filename) {
+                    alert('请先选择详情文件。');
+                    return;
+                }
+                const url = '/details/full?file=' + encodeURIComponent(filename);
+                window.open(url, '_blank');
+            });
+
+            // 列宽拖拽
+            (function initResizer() {
+                const left = document.getElementById('col-left');
+                const right = document.getElementById('col-right');
+                const resizer = document.getElementById('col-resizer');
+                if (!left || !right || !resizer) return;
+
+                let dragging = false;
+                let startX = 0;
+                let startLeftWidth = 0;
+
+                resizer.addEventListener('mousedown', (e) => {
+                    dragging = true;
+                    startX = e.clientX;
+                    startLeftWidth = left.getBoundingClientRect().width;
+                    document.body.style.userSelect = 'none';
+                });
+
+                window.addEventListener('mousemove', (e) => {
+                    if (!dragging) return;
+                    const dx = e.clientX - startX;
+                    const newWidth = Math.max(260, Math.min(startLeftWidth + dx, window.innerWidth - 380));
+                    left.style.flex = '0 0 ' + newWidth + 'px';
+                    right.style.flex = '1 1 auto';
+                });
+
+                window.addEventListener('mouseup', () => {
+                    if (dragging) {
+                        dragging = false;
+                        document.body.style.userSelect = '';
+                    }
+                });
+            })();
+
+            // 周期性轮询
+            pollStatus();
+            pollCaptcha();
+            setInterval(pollStatus, 1000);
+            setInterval(pollCaptcha, 1000);
+
+        });
+    </script>
+</body>
+
+</html>
