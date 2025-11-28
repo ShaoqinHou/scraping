@@ -696,45 +696,66 @@ class ClassicProjectExtractor:
                 return stage
         return None
 
+    @staticmethod
+    def _parse_number(num_str: str) -> Optional[float]:
+        try:
+            return float(num_str.replace(",", ""))
+        except Exception:
+            return None
+
     def _extract_capacity_mw(self, text: str) -> Optional[float]:
-        # 优先万千瓦
-        m = re.search(r"(\d+(\.\d+)?)\s*万\s*千瓦", text)
+        # 万千瓦 => MW
+        m = re.search(r"(\d[\d,]*\.?\d*)\s*万\s*千瓦", text)
         if m:
-            try:
-                return float(m.group(1)) * 10.0
-            except ValueError:
-                pass
-        # 直接千瓦
-        m = re.search(r"(\d+(\.\d+)?)\s*千瓦", text)
+            v = self._parse_number(m.group(1))
+            if v is not None:
+                return v * 10.0  # 1万千瓦 = 10 MW
+        # GW
+        m = re.search(r"(\d[\d,]*\.?\d*)\s*GW", text, re.IGNORECASE)
         if m:
-            try:
-                return float(m.group(1)) / 10_000.0
-            except ValueError:
-                pass
+            v = self._parse_number(m.group(1))
+            if v is not None:
+                return v * 1000.0
         # MW
-        m = re.search(r"(\d+(\.\d+)?)\s*MW", text, re.IGNORECASE)
+        m = re.search(r"(\d[\d,]*\.?\d*)\s*MW", text, re.IGNORECASE)
         if m:
-            try:
-                return float(m.group(1))
-            except ValueError:
-                pass
+            v = self._parse_number(m.group(1))
+            if v is not None:
+                return v
+        # 千瓦/kW
+        m = re.search(r"(\d[\d,]*\.?\d*)\s*(千瓦|kW|KW)", text)
+        if m:
+            v = self._parse_number(m.group(1))
+            if v is not None:
+                return v / 1_000.0
+        # 瓦
+        m = re.search(r"(\d[\d,]*\.?\d*)\s*瓦", text)
+        # MW
+        if m:
+            v = self._parse_number(m.group(1))
+            if v is not None:
+                return v / 1_000_000.0
         return None
 
     def _extract_investment_cny(self, text: str) -> Optional[float]:
         # 亿元
-        m = re.search(r"(\d+(\.\d+)?)\s*亿元", text)
+        m = re.search(r"(\d[\d,]*\.?\d*)\s*亿\s*元?", text)
         if m:
-            try:
-                return float(m.group(1)) * 100_000_000.0
-            except ValueError:
-                pass
+            v = self._parse_number(m.group(1))
+            if v is not None:
+                return v * 100_000_000.0
         # 万元
-        m = re.search(r"(\d+(\.\d+)?)\s*万\s*元", text)
+        m = re.search(r"(\d[\d,]*\.?\d*)\s*万\s*元", text)
         if m:
-            try:
-                return float(m.group(1)) * 10_000.0
-            except ValueError:
-                pass
+            v = self._parse_number(m.group(1))
+            if v is not None:
+                return v * 10_000.0
+        # 元
+        m = re.search(r"(\d[\d,]*\.?\d*)\s*元", text)
+        if m:
+            v = self._parse_number(m.group(1))
+            if v is not None:
+                return v
         return None
 
     def _extract_owner(self, text: str) -> Optional[str]:
