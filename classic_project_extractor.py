@@ -212,14 +212,12 @@ class ClassicProjectExtractor:
 
     def _ensure_unique_index(self) -> None:
         """避免 projects_classic 重复 URL。"""
-        conn = self._connect()
-        try:
-            with conn:
-                conn.execute(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS ux_projects_classic_url ON projects_classic(url)"
-                )
-        finally:
-            conn.close()
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            self._ensure_schema(conn)
+            conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ux_projects_classic_url ON projects_classic(url)"
+            )
         self._load_region_index()
 
     def _emit(self, **info: Any) -> None:
@@ -231,6 +229,15 @@ class ClassicProjectExtractor:
             conn.row_factory = sqlite3.Row
             self._ensure_schema(conn)
             self._conn = conn
+        else:
+            try:
+                self._conn.execute("SELECT 1")
+            except sqlite3.ProgrammingError:
+                # reopen if the cached connection was closed
+                conn = sqlite3.connect(self.db_path, check_same_thread=False)
+                conn.row_factory = sqlite3.Row
+                self._ensure_schema(conn)
+                self._conn = conn
         return self._conn
 
     def _ensure_schema(self, conn: sqlite3.Connection) -> None:
