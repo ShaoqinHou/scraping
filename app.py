@@ -19,6 +19,9 @@ from ai_detail_summarizer import AIDetailSummarizer
 import json
 import os
 
+BASE_DIR = pathlib.Path(__file__).resolve().parent
+DB_PATH = str(BASE_DIR / "qn_hydrogen_monitor.db")
+
 app = Flask(__name__, template_folder="templates", static_folder="static")
 captcha_manager = CaptchaManager()
 start_standalone_captcha_server(captcha_manager)
@@ -75,7 +78,7 @@ def save_secrets(secrets):
 
 
 def get_db_connection():
-    conn = sqlite3.connect('qn_hydrogen_monitor.db')
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -342,7 +345,7 @@ def get_hydrogen_articles():
     offset = (page - 1) * page_size
 
     try:
-        conn = sqlite3.connect("qn_hydrogen_monitor.db")
+        conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         where = ""
@@ -394,7 +397,7 @@ def get_hydrogen_articles():
 def reset_hydrogen_articles():
     conn = None
     try:
-        conn = sqlite3.connect("qn_hydrogen_monitor.db")
+        conn = sqlite3.connect(DB_PATH)
         cur = conn.cursor()
         cur.execute("DELETE FROM articles")
         conn.commit()
@@ -803,7 +806,7 @@ def classic_projects_full():
 def reset_classic_projects():
     conn = None
     try:
-        conn = sqlite3.connect("qn_hydrogen_monitor.db")
+        conn = sqlite3.connect(DB_PATH)
         cur = conn.cursor()
         cur.execute("DELETE FROM projects_classic")
         cur.execute(

@@ -6,9 +6,13 @@ import threading
 from typing import Any, Callable, Dict, List, Optional
 
 from urllib.parse import urljoin
+from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
+
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_DB_PATH = str(BASE_DIR / "qn_hydrogen_monitor.db")
 
 
 HydrogenProgressCallback = Callable[..., None]
@@ -86,7 +90,7 @@ class QNHydrogenMonitor:
     def __init__(
         self,
         channels: List[HydrogenChannelConfig],
-        db_path: str = "qn_hydrogen_monitor.db",
+        db_path: str = DEFAULT_DB_PATH,
         progress_callback: Optional[HydrogenProgressCallback] = None,
         session: Optional[requests.Session] = None,
     ) -> None:

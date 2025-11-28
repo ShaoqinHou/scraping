@@ -9,6 +9,10 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import requests
 from bs4 import BeautifulSoup
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_DB_PATH = str(BASE_DIR / "qn_hydrogen_monitor.db")
 
 
 ClassicProgressCallback = Callable[..., None]
@@ -188,7 +192,7 @@ class ClassicProjectExtractor:
 
     def __init__(
         self,
-        db_path: str = "qn_hydrogen_monitor.db",
+        db_path: str = DEFAULT_DB_PATH,
         session: Optional[requests.Session] = None,
         progress_callback: Optional[ClassicProgressCallback] = None,
     ) -> None:

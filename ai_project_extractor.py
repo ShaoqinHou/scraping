@@ -5,9 +5,13 @@ import json
 import time
 import concurrent.futures
 from openai import OpenAI
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_DB_PATH = str(BASE_DIR / "qn_hydrogen_monitor.db")
 
 class AIProjectExtractor:
-    def __init__(self, api_key, base_url="https://api.siliconflow.cn/v1", model="THUDM/GLM-4-9B-0414", db_path="qn_hydrogen_monitor.db", request_timeout=20):
+    def __init__(self, api_key, base_url="https://api.siliconflow.cn/v1", model="THUDM/GLM-4-9B-0414", db_path=DEFAULT_DB_PATH, request_timeout=20):
         self.api_key = api_key
         self.base_url = base_url
         self.model = model

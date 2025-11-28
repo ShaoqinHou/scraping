@@ -3,7 +3,11 @@ import datetime as dt
 import sqlite3
 from typing import Any, Callable, Dict, List, Optional
 
+from pathlib import Path
 from playwright.async_api import async_playwright
+
+BASE_DIR = Path(__file__).resolve().parent
+DEFAULT_DB_PATH = str(BASE_DIR / "qn_hydrogen_monitor.db")
 
 
 TextProgressCallback = Callable[..., None]
@@ -133,7 +137,7 @@ async def _run_playwright_fetch(
 
 
 def fetch_missing_article_texts(
-    db_path: str = "qn_hydrogen_monitor.db",
+    db_path: str = DEFAULT_DB_PATH,
     headless: bool = True,
     max_concurrent: int = 4,
     max_articles: Optional[int] = None,
