@@ -208,6 +208,18 @@ class ClassicProjectExtractor:
         # 行政区划索引（从 cn_regions_raw.json 构建）
         self._province_by_token: Dict[str, str] = {}
         self._city_by_token: Dict[str, Tuple[str, str]] = {}
+        self._ensure_unique_index()
+
+    def _ensure_unique_index(self) -> None:
+        """避免 projects_classic 重复 URL。"""
+        conn = self._connect()
+        try:
+            with conn:
+                conn.execute(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS ux_projects_classic_url ON projects_classic(url)"
+                )
+        finally:
+            conn.close()
         self._load_region_index()
 
     def _emit(self, **info: Any) -> None:
@@ -1139,7 +1151,7 @@ class ClassicProjectExtractor:
             for project in projects_to_insert:
                 conn.execute(
                     """
-                    INSERT INTO projects_classic (
+                    INSERT OR REPLACE INTO projects_classic (
                         url, channel_id, channel_label, article_title, published_at,
                         project_name, stage, event_date, location,
                         capacity_mw, investment_cny, product_category,
