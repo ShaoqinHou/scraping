@@ -247,6 +247,9 @@ class QNHydrogenMonitor:
         max_new_articles: Optional[int] = None,
         max_pages_per_channel: Optional[int] = None,
     ) -> None:
+        max_new_articles = max_new_articles if (max_new_articles and max_new_articles > 0) else None
+        max_pages_per_channel = max_pages_per_channel if (max_pages_per_channel and max_pages_per_channel > 0) else None
+        pages_without_new_limit = 3
         self._emit(
             stage="running",
             message="氢能频道监控启动",
@@ -289,24 +292,12 @@ class QNHydrogenMonitor:
                     total_in_db=total_in_db,
                 )
                 if max_new_articles and new_in_run >= max_new_articles:
-                    self._emit(
-                        stage="idle",
-                        message="本轮监控达到目标新文章数量",
-                        current=new_in_run,
-                        total=max_new_articles,
-                        channel_id=channel.id,
-                        channel_label=channel.label,
-                        page=page,
-                        new_in_page=new_in_page,
-                        new_in_run=new_in_run,
-                        total_in_db=total_in_db,
-                    )
                     return
                 if not items or new_in_page == 0:
                     pages_without_new += 1
                 else:
                     pages_without_new = 0
-                if pages_without_new >= 3:
+                if pages_without_new >= pages_without_new_limit:
                     break
                 page += 1
         total_in_db = self._count_articles()
