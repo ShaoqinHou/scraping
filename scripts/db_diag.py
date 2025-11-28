@@ -15,16 +15,15 @@ def main() -> None:
 
     try:
         conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        tables = cur.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+        ).fetchall()
+        print("tables:", [r[0] for r in tables])
     except sqlite3.DatabaseError as e:
-        print(f"ERROR opening DB: {e}")
+        print(f"ERROR opening/listing DB: {e}")
         return
-    conn.row_factory = sqlite3.Row
-    cur = conn.cursor()
-
-    tables = cur.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-    ).fetchall()
-    print("tables:", [r[0] for r in tables])
 
     def count(table: str) -> None:
         try:
