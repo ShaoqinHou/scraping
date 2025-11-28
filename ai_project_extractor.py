@@ -7,12 +7,14 @@ import concurrent.futures
 from openai import OpenAI
 
 class AIProjectExtractor:
-    def __init__(self, api_key, base_url="https://api.siliconflow.cn/v1", model="THUDM/GLM-4-9B-0414", db_path="qn_hydrogen_monitor.db"):
+    def __init__(self, api_key, base_url="https://api.siliconflow.cn/v1", model="THUDM/GLM-4-9B-0414", db_path="qn_hydrogen_monitor.db", request_timeout=20):
         self.api_key = api_key
         self.base_url = base_url
         self.model = model
         self.db_path = db_path
         self.client = OpenAI(api_key=api_key, base_url=base_url)
+        # Per-request timeout to avoid hanging on a single article
+        self.request_timeout = request_timeout
         self.running = False
 
     def get_db_connection(self):
@@ -119,7 +121,8 @@ Article Content:
                 ],
                 temperature=0.1,
                 max_tokens=1500,
-                extra_body={"top_k": 5, "top_p": 0.85, "repetition_penalty": 1.05}
+                extra_body={"top_k": 5, "top_p": 0.85, "repetition_penalty": 1.05},
+                timeout=self.request_timeout,
             )
             
             content = response.choices[0].message.content.strip()
