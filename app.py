@@ -78,9 +78,24 @@ def save_secrets(secrets):
 
 
 def get_db_connection():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    def _open():
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
+
+    try:
+        return _open()
+    except sqlite3.DatabaseError as exc:
+        if "file is not a database" in str(exc):
+            backup = f"{DB_PATH}.corrupt"
+            try:
+                os.replace(DB_PATH, backup)
+            except OSError:
+                pass
+            # Recreate a fresh DB with schema
+            extractor = ClassicProjectExtractor(db_path=DB_PATH)
+            return extractor._connect()
+        raise
 
 
 def _run_async(coro):

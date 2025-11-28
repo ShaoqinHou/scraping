@@ -228,20 +228,31 @@ class ClassicProjectExtractor:
         self.progress_callback(**info)
 
     def _connect(self) -> sqlite3.Connection:
-        if self._conn is None:
+        def _open() -> sqlite3.Connection:
             conn = sqlite3.connect(self.db_path, check_same_thread=False)
             conn.row_factory = sqlite3.Row
             self._ensure_schema(conn)
-            self._conn = conn
-        else:
+            return conn
+
+        if self._conn is not None:
             try:
                 self._conn.execute("SELECT 1")
-            except sqlite3.ProgrammingError:
-                # reopen if the cached connection was closed
-                conn = sqlite3.connect(self.db_path, check_same_thread=False)
-                conn.row_factory = sqlite3.Row
-                self._ensure_schema(conn)
-                self._conn = conn
+                return self._conn
+            except sqlite3.Error:
+                self._conn = None
+
+        try:
+            self._conn = _open()
+        except sqlite3.DatabaseError as exc:
+            if "file is not a database" in str(exc):
+                backup = f"{self.db_path}.corrupt"
+                try:
+                    os.replace(self.db_path, backup)
+                except OSError:
+                    pass
+                self._conn = _open()
+            else:
+                raise
         return self._conn
 
     def _ensure_schema(self, conn: sqlite3.Connection) -> None:

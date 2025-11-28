@@ -102,9 +102,8 @@ class QNHydrogenMonitor:
         self._conn: Optional[sqlite3.Connection] = None
 
     def _connect(self) -> sqlite3.Connection:
-        if self._conn is None:
-            self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
-            conn = self._conn
+        def _open() -> sqlite3.Connection:
+            conn = sqlite3.connect(self.db_path, check_same_thread=False)
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS articles (
@@ -142,6 +141,27 @@ class QNHydrogenMonitor:
                 except sqlite3.Error:
                     continue
             conn.commit()
+            return conn
+
+        if self._conn is not None:
+            try:
+                self._conn.execute("SELECT 1")
+                return self._conn
+            except sqlite3.Error:
+                self._conn = None
+
+        try:
+            self._conn = _open()
+        except sqlite3.DatabaseError as exc:
+            if "file is not a database" in str(exc):
+                backup = f"{self.db_path}.corrupt"
+                try:
+                    os.replace(self.db_path, backup)
+                except OSError:
+                    pass
+                self._conn = _open()
+            else:
+                raise
         return self._conn
 
     def _emit(self, **info: Any) -> None:

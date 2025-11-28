@@ -13,7 +13,11 @@ def main() -> None:
         return
     print(f"DB size:   {db_path.stat().st_size} bytes")
 
-    conn = sqlite3.connect(db_path)
+    try:
+        conn = sqlite3.connect(db_path)
+    except sqlite3.DatabaseError as e:
+        print(f"ERROR opening DB: {e}")
+        return
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
 
