@@ -44,13 +44,26 @@ class AIProjectExtractor:
         api_key,
         base_url="https://api.siliconflow.cn/v1",
         model="THUDM/GLM-4-9B-0414",
+        models=None,
         db_path=DEFAULT_DB_PATH,
         request_timeout=20,
         rpm_limit: int | None = None,
     ):
         self.api_key = api_key
         self.base_url = base_url
-        self.model = model
+        # Accept single model or list of models
+        if models:
+            if isinstance(models, str):
+                self.models = [m for m in re.split(r"[\\s,]+", models.strip()) if m]
+            else:
+                self.models = list(models)
+        else:
+            self.models = [model] if model else ["THUDM/GLM-4-9B-0414"]
+        if not self.models:
+            self.models = ["THUDM/GLM-4-9B-0414"]
+        self._model_idx = 0
+        self._model_lock = threading.Lock()
+
         self.db_path = db_path
         self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.request_timeout = request_timeout
@@ -61,9 +74,6 @@ class AIProjectExtractor:
         # Per-model limiter so different models don't share the same window
         if not hasattr(self.__class__, "_rate_limiters"):
             self.__class__._rate_limiters = {}
-        self.rate_limiter = self.__class__._rate_limiters.setdefault(
-            f"{self.base_url}::{self.model}", RateLimiter(self.rpm_limit)
-        )
 
     def log_debug(self, msg: str) -> None:
         try:
@@ -86,7 +96,15 @@ class AIProjectExtractor:
         conn.row_factory = sqlite3.Row
         return conn
 
-    def extract_project_info(self, title, content):
+    def _next_model(self):
+        with self._model_lock:
+            model = self.models[self._model_idx % len(self.models)]
+            self._model_idx += 1
+        key = f"{self.base_url}::{model}"
+        limiter = self.__class__._rate_limiters.setdefault(key, RateLimiter(self.rpm_limit))
+        return model, limiter
+
+    def extract_project_info(self, title, content, model_name=None):
         raw_response = ""
         system_prompt = """
 你是一位氢能项目分析专家。你的任务是从提供的文本中提取结构化的氢能项目数据。
@@ -177,7 +195,7 @@ Article Content (truncated 1000 chars):
 
         try:
             response = self.client.chat.completions.create(
-                model=self.model,
+                model=model_name or self.models[0],
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
@@ -219,10 +237,11 @@ Article Content (truncated 1000 chars):
             if not content:
                 return {"id": project["id"], "status": "skip", "msg": "[AI跳过: 无正文]", "project": project}
 
-            if self.rate_limiter:
-                self.rate_limiter.wait()
+            model_name, limiter = self._next_model()
+            if limiter:
+                limiter.wait()
 
-            result = self.extract_project_info(project["article_title"], content)
+            result = self.extract_project_info(project["article_title"], content, model_name=model_name)
             # Normalize list responses: take first dict if available
             if isinstance(result, list):
                 result = result[0] if result and isinstance(result[0], dict) else {"__error": "invalid_list_result"}
