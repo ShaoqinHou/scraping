@@ -6,6 +6,7 @@ import time
 import threading
 import collections
 import re
+from decimal import Decimal
 from pathlib import Path
 
 from openai import OpenAI
@@ -165,8 +166,8 @@ Return ONLY valid JSON.
 
         user_prompt = f"""
 Article Title: {title}
-Article Content (truncated 1500 chars):
-{content[:1500]}
+Article Content (truncated 1000 chars):
+{content[:1000]}
 """
 
         try:
@@ -217,6 +218,9 @@ Article Content (truncated 1500 chars):
                 self.rate_limiter.wait()
 
             result = self.extract_project_info(project["article_title"], content)
+            # Normalize list responses: take first dict if available
+            if isinstance(result, list):
+                result = result[0] if result and isinstance(result[0], dict) else {"__error": "invalid_list_result"}
             if result and isinstance(result, dict) and "__error" in result:
                 err = result.get("__error", "")
                 status = "fail"
@@ -263,29 +267,35 @@ Article Content (truncated 1500 chars):
         def normalize_number(val, field):
             if val is None or val == "":
                 return None
-            if isinstance(val, (int, float)):
-                return float(val)
+            # keep decimals stable for money
+            def to_decimal(x):
+                try:
+                    return Decimal(str(x))
+                except Exception:
+                    return None
+
+            if isinstance(val, (int, float, Decimal)):
+                d = to_decimal(val)
+                return float(d) if d is not None else None
             if isinstance(val, str):
                 s = val.strip()
-                try:
-                    return float(s)
-                except Exception:
-                    pass
-                m = re.search(r"([0-9]+(?:\\.[0-9]+)?)", s)
-                num = float(m.group(1)) if m else None
-                if num is None:
+                d = to_decimal(s)
+                if d is None:
+                    m = re.search(r"([0-9]+(?:\\.[0-9]+)?)", s)
+                    d = to_decimal(m.group(1)) if m else None
+                if d is None:
                     return None
                 if "亿" in s:
-                    return num * 1e8
+                    return float(d * Decimal("1e8"))
                 if "万元" in s or "万人民币" in s:
-                    return num * 1e4
+                    return float(d * Decimal("1e4"))
                 if "万千瓦" in s:
-                    return num * 10  # 万千瓦 -> MW
+                    return float(d * Decimal("10"))  # 万千瓦 -> MW
                 if "千瓦" in s:
-                    return num / 1000.0
+                    return float(d / Decimal("1000"))
                 if "gw" in s.lower():
-                    return num * 1000.0
-                return num
+                    return float(d * Decimal("1000"))
+                return float(d)
             return None
 
         def normalize_value(v):

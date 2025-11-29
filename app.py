@@ -509,7 +509,17 @@ def run_classic_extractor():
 
 @app.route("/api/hydrogen/projects/classic/status")
 def get_classic_extractor_status():
-    return jsonify(classic_extractor_status)
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM projects_classic")
+        total = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM projects_classic WHERE is_ai_improved = 1")
+        ai_done = cur.fetchone()[0]
+    except Exception:
+        total = 0
+        ai_done = 0
+    return jsonify({**classic_extractor_status, "classic_total": total, "ai_done": ai_done})
 
 
 @app.route('/api/hydrogen/projects/classic/list', methods=['GET', 'POST'])
@@ -996,7 +1006,8 @@ def run_ai_extractor():
     max_projects = payload.get("max_projects", 10)
     # Reuse the UI “每分钟请求上限” field as a per-minute request cap to avoid rate limits.
     rpm_limit = payload.get("max_workers", 20)  # default conservative to stay under TPM
-    worker_count = max(1, min(int(rpm_limit), 5))  # small pool; rate limiter enforces rpm
+    # Allow a larger worker pool; RPM limiter will enforce overall pace.
+    worker_count = max(1, min(int(rpm_limit), 20))
 
     def task():
         try:
@@ -1020,7 +1031,17 @@ def run_ai_extractor():
 
 @app.route("/api/hydrogen/projects/ai/status")
 def get_ai_extractor_status():
-    return jsonify(ai_extractor_status)
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT COUNT(*) FROM projects_classic")
+        total = cur.fetchone()[0]
+        cur.execute("SELECT COUNT(*) FROM projects_classic WHERE is_ai_improved = 1")
+        ai_done = cur.fetchone()[0]
+    except Exception:
+        total = 0
+        ai_done = 0
+    return jsonify({**ai_extractor_status, "classic_total": total, "ai_done": ai_done})
 
 @app.route("/api/hydrogen/projects/ai/reset", methods=["POST"])
 def reset_ai_projects():

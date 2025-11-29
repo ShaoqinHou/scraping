@@ -497,6 +497,9 @@
                 if (data.total > 0) {
                     msg += ` (${data.current} / ${data.total})`;
                 }
+                if (data.ai_done !== undefined) {
+                    msg += ` | AI完成: ${data.ai_done || 0}/${data.classic_total || 0}`;
+                }
                 const el = document.getElementById('ai-status-text');
                 if (el) el.textContent = msg;
                 
@@ -807,6 +810,9 @@
                 let msg = data.message || '';
                 if (!msg) {
                     msg = stage === 'running' ? '运行中' : '待机';
+                }
+                if (data.ai_done !== undefined) {
+                    msg += ` | AI完成: ${data.ai_done || 0}/${data.classic_total || 0}`;
                 }
                 
                 // Auto-update button state
