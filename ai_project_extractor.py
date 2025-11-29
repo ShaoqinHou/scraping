@@ -256,6 +256,7 @@ Article Content (truncated 1000 chars):
         if not self.running:
             return None
 
+        start_time = time.time()
         conn = self.get_db_connection()
         cursor = conn.cursor()
         try:
@@ -292,13 +293,35 @@ Article Content (truncated 1000 chars):
                     "msg": f"[AI失败: {err} @ {mdl or ''}]",
                     "project": project,
                     "model": mdl or model_name,
+                    "elapsed": time.time() - start_time,
                 }
             if result:
-                return {"id": project["id"], "status": "ok", "result": result, "project": project, "model": model_name}
-            return {"id": project["id"], "status": "fail", "msg": "[AI失败]", "project": project, "model": model_name}
+                return {
+                    "id": project["id"],
+                    "status": "ok",
+                    "result": result,
+                    "project": project,
+                    "model": model_name,
+                    "elapsed": time.time() - start_time,
+                }
+            return {
+                "id": project["id"],
+                "status": "fail",
+                "msg": "[AI失败]",
+                "project": project,
+                "model": model_name,
+                "elapsed": time.time() - start_time,
+            }
         except Exception as e:
             print(f"Error processing project {project.get('id')}: {e}")
-            return {"id": project.get("id"), "status": "fail", "msg": "[AI失败]", "project": project, "model": model_name}
+            return {
+                "id": project.get("id"),
+                "status": "fail",
+                "msg": "[AI失败]",
+                "project": project,
+                "model": model_name,
+                "elapsed": time.time() - start_time,
+            }
         finally:
             conn.close()
 
@@ -465,7 +488,7 @@ Article Content (truncated 1000 chars):
                     )
                     writer_conn.commit()
                     try:
-                        self.log_debug(f"OK model={mdl} id={project_id} title={proj.get('article_title','')}")
+                        self.log_debug(f"OK model={mdl} id={project_id} elapsed={payload.get('elapsed')} title={proj.get('article_title','')}")
                     except Exception:
                         pass
                     return
@@ -486,12 +509,17 @@ Article Content (truncated 1000 chars):
                 """
                 UPDATE projects_classic
                 SET is_ai_improved = 0,
-                    project_progress = ?
+                    project_progress = ?,
+                    ai_model = ?
                 WHERE id = ?
                 """,
-                (new_progress, project_id),
+                (new_progress, mdl or payload.get("model"), project_id),
             )
             writer_conn.commit()
+            try:
+                self.log_debug(f"FAIL model={mdl or payload.get('model')} id={project_id} note={note} elapsed={payload.get('elapsed')}")
+            except Exception:
+                pass
 
         try:
             cursor.execute("UPDATE projects_classic SET is_ai_improved = 0 WHERE is_ai_improved = 9")
