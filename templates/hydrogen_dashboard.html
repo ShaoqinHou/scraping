@@ -330,7 +330,7 @@
                 <button type="button" class="secondary" onclick="window.open('/api/hydrogen/projects/classic/export', '_blank')">导出 CSV</button>
                 <button type="button" class="secondary" onclick="resetAiProjects()">清空 AI 增强记录</button>
                 <label>最大项目数：<input type="number" id="ai-max-projects" value="4000" style="width: 60px;"></label>
-                <label>每分钟请求上限：<input type="number" id="ai-max-workers" value="150" style="width: 70px;"></label>
+                <label>每分钟请求上限：<input type="number" id="ai-max-workers" value="20" style="width: 70px;"></label>
             </div>
         </section>
     </main>
@@ -469,7 +469,7 @@
             if (btn) btn.disabled = true;
             lastAiStage = 'running'; // Force state
             const maxProj = parseInt(document.getElementById('ai-max-projects').value || '4000', 10);
-            const maxWork = parseInt(document.getElementById('ai-max-workers').value || '150', 10);
+            const maxWork = parseInt(document.getElementById('ai-max-workers').value || '20', 10);
             
             fetch('/api/hydrogen/projects/ai/run', {
                 method: 'POST',

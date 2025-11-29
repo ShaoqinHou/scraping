@@ -994,9 +994,9 @@ def run_ai_extractor():
 
     payload = request.get_json() or {}
     max_projects = payload.get("max_projects", 10)
-    # Reuse the UI “并发数” field as a per-minute request cap to avoid rate limits.
-    rpm_limit = payload.get("max_workers", 150)
-    worker_count = max(1, min(int(rpm_limit), 10))  # small pool; rate limiter enforces rpm
+    # Reuse the UI “每分钟请求上限” field as a per-minute request cap to avoid rate limits.
+    rpm_limit = payload.get("max_workers", 20)  # default conservative to stay under TPM
+    worker_count = max(1, min(int(rpm_limit), 5))  # small pool; rate limiter enforces rpm
 
     def task():
         try:

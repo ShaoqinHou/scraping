@@ -5,6 +5,7 @@ import concurrent.futures
 import time
 import threading
 import collections
+import re
 from pathlib import Path
 
 from openai import OpenAI
@@ -164,8 +165,8 @@ Return ONLY valid JSON.
 
         user_prompt = f"""
 Article Title: {title}
-Article Content:
-{content[:3000]}
+Article Content (truncated 1500 chars):
+{content[:1500]}
 """
 
         try:
@@ -259,6 +260,34 @@ Article Content:
         writer_cur = writer_conn.cursor()
         hit_rate_limit = False
 
+        def normalize_number(val, field):
+            if val is None or val == "":
+                return None
+            if isinstance(val, (int, float)):
+                return float(val)
+            if isinstance(val, str):
+                s = val.strip()
+                try:
+                    return float(s)
+                except Exception:
+                    pass
+                m = re.search(r"([0-9]+(?:\\.[0-9]+)?)", s)
+                num = float(m.group(1)) if m else None
+                if num is None:
+                    return None
+                if "亿" in s:
+                    return num * 1e8
+                if "万元" in s or "万人民币" in s:
+                    return num * 1e4
+                if "万千瓦" in s:
+                    return num * 10  # 万千瓦 -> MW
+                if "千瓦" in s:
+                    return num / 1000.0
+                if "gw" in s.lower():
+                    return num * 1000.0
+                return num
+            return None
+
         def normalize_value(v):
             if isinstance(v, (list, dict)):
                 try:
@@ -296,7 +325,11 @@ Article Content:
                     merged = {}
                     for k, v in current.items():
                         new_val = res.get(k)
-                        merged[k] = normalize_value(new_val) if (new_val not in (None, "")) else v
+                        if k in ("capacity_mw", "investment_cny", "h2_output_tpy", "h2_output_nm3_per_h", "co2_reduction_tpy"):
+                            norm = normalize_number(new_val, k)
+                            merged[k] = norm if norm is not None else v
+                        else:
+                            merged[k] = normalize_value(new_val) if (new_val not in (None, "")) else v
                     writer_cur.execute(
                         """
                         UPDATE projects_classic 
