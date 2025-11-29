@@ -994,13 +994,19 @@ def run_ai_extractor():
 
     payload = request.get_json() or {}
     max_projects = payload.get("max_projects", 10)
-    max_workers = payload.get("max_workers", 5)
-    
+    # Reuse the UI “并发数” field as a per-minute request cap to avoid rate limits.
+    rpm_limit = payload.get("max_workers", 150)
+    worker_count = max(1, min(int(rpm_limit), 10))  # small pool; rate limiter enforces rpm
+
     def task():
         try:
-            extractor = AIProjectExtractor(api_key, model=model)
+            extractor = AIProjectExtractor(api_key, model=model, rpm_limit=int(rpm_limit))
             ai_progress(stage="running", message="AI提取启动", current=0, total=0)
-            extractor.run(max_projects=int(max_projects), max_workers=int(max_workers), progress_callback=ai_progress)
+            extractor.run(
+                max_projects=int(max_projects),
+                max_workers=worker_count,
+                progress_callback=ai_progress,
+            )
         except Exception as e:
             ai_progress(stage="idle", message=f"AI提取出错: {e}")
         finally:
