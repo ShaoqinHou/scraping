@@ -325,7 +325,8 @@ class ClassicProjectExtractor:
                 project_overview TEXT,
                 project_progress TEXT,
                 user_note TEXT,
-                is_ai_improved BOOLEAN DEFAULT 0
+                is_ai_improved BOOLEAN DEFAULT 0,
+                ai_model TEXT
             )
             """
         )
@@ -365,6 +366,8 @@ class ClassicProjectExtractor:
         cur = conn.execute("PRAGMA table_info(projects_classic)")
         pcols = {row[1] for row in cur.fetchall()}
         alter_proj = []
+        if "ai_model" not in pcols:
+            alter_proj.append("ALTER TABLE projects_classic ADD COLUMN ai_model TEXT")
         if "province" not in pcols:
             alter_proj.append("ALTER TABLE projects_classic ADD COLUMN province TEXT")
         if "city" not in pcols:
