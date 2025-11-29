@@ -339,6 +339,15 @@ Article Content (truncated 1000 chars):
         self.running = True
         conn = self.get_db_connection()
         cursor = conn.cursor()
+        # Ensure ai_model column exists
+        try:
+            cur = conn.execute("PRAGMA table_info(projects_classic)")
+            cols = {row[1] for row in cur.fetchall()}
+            if "ai_model" not in cols:
+                conn.execute("ALTER TABLE projects_classic ADD COLUMN ai_model TEXT")
+                conn.commit()
+        except Exception:
+            pass
         total = 0
         completed = 0
         max_workers = max(1, int(max_workers))
