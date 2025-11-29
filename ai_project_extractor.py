@@ -266,16 +266,26 @@ Article Content:
                     writer_conn.commit()
                     return
 
-            # Failure/skip: mark as not improved so it can retry next run
+            # Failure/skip: mark as not improved so it can retry next run.
+            # Avoid duplicating the marker.
             note = payload.get("msg") or "[AI失败]"
+            writer_cur.execute(
+                "SELECT project_progress FROM projects_classic WHERE id = ?", (project_id,)
+            )
+            row = writer_cur.fetchone()
+            existing = row[0] if row else ""
+            if note not in (existing or ""):
+                new_progress = (existing or "") + note
+            else:
+                new_progress = existing
             writer_cur.execute(
                 """
                 UPDATE projects_classic
                 SET is_ai_improved = 0,
-                    project_progress = COALESCE(project_progress, '') || ?
+                    project_progress = ?
                 WHERE id = ?
                 """,
-                (note, project_id),
+                (new_progress, project_id),
             )
             writer_conn.commit()
 
