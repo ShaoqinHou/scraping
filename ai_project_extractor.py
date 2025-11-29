@@ -78,12 +78,9 @@ class AIProjectExtractor:
 
     def log_debug(self, msg: str) -> None:
         try:
-            LOG_PATH.write_text(f"", encoding="utf-8")  # ensure file exists
-        except Exception:
-            pass
-        try:
+            ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
             with LOG_PATH.open("a", encoding="utf-8") as f:
-                f.write(f"[{os.times()}] {msg}\n")
+                f.write(f"[{ts}] {msg}\n")
         except Exception:
             pass
 
@@ -225,7 +222,7 @@ Article Content (truncated 1000 chars):
             msg = f"API error: {e}"
             print(msg)
             try:
-                self.log_debug(f"{msg} | raw={raw_response[:500]} | model={model_name}")
+                self.log_debug(f"{msg} | model={model_name} | raw={raw_response[:500]}")
             except Exception:
                 pass
             return {"__error": msg, "__raw": raw_response[:500], "__model": model_name}
@@ -260,6 +257,10 @@ Article Content (truncated 1000 chars):
                     status = "rate_limit"
                 if "does not exist" in err.lower() and mdl:
                     self._bad_models.add(mdl)
+                    try:
+                        self.log_debug(f"Mark bad model: {mdl} due to {err}")
+                    except Exception:
+                        pass
                 return {
                     "id": project["id"],
                     "status": status,
