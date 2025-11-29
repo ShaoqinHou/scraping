@@ -8,6 +8,7 @@ from openai import OpenAI
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DB_PATH = str(BASE_DIR / "qn_hydrogen_monitor.db")
+LOG_PATH = BASE_DIR / "ai_project_extractor.log"
 
 
 class AIProjectExtractor:
@@ -27,6 +28,17 @@ class AIProjectExtractor:
         self.request_timeout = request_timeout
         self.running = False
 
+    def log_debug(self, msg: str) -> None:
+        try:
+            LOG_PATH.write_text(f"", encoding="utf-8")  # ensure file exists
+        except Exception:
+            pass
+        try:
+            with LOG_PATH.open("a", encoding="utf-8") as f:
+                f.write(f"[{os.times()}] {msg}\n")
+        except Exception:
+            pass
+
     def get_db_connection(self):
         conn = sqlite3.connect(self.db_path, check_same_thread=False)
         try:
@@ -38,6 +50,7 @@ class AIProjectExtractor:
         return conn
 
     def extract_project_info(self, title, content):
+        raw_response = ""
         system_prompt = """
 你是一位氢能项目分析专家。你的任务是从提供的文本中提取结构化的氢能项目数据。
 
@@ -140,16 +153,22 @@ Article Content:
                 timeout=self.request_timeout,
             )
 
-            content = response.choices[0].message.content.strip()
-            if "```json" in content:
-                content = content.split("```json")[1].split("```")[0].strip()
-            elif "```" in content:
-                content = content.split("```")[1].split("```")[0].strip()
+            raw_response = response.choices[0].message.content.strip()
+            parsed = raw_response
+            if "```json" in parsed:
+                parsed = parsed.split("```json")[1].split("```")[0].strip()
+            elif "```" in parsed:
+                parsed = parsed.split("```")[1].split("```")[0].strip()
 
-            return json.loads(content)
+            return json.loads(parsed)
         except Exception as e:
-            print(f"Error calling API: {e}")
-            return None
+            msg = f"API error: {e}"
+            print(msg)
+            try:
+                self.log_debug(f"{msg} | raw={raw_response[:500]}")
+            except Exception:
+                pass
+            return {"__error": msg, "__raw": raw_response[:500]}
 
     def process_single_project_once(self, project):
         if not self.running:
@@ -166,6 +185,13 @@ Article Content:
                 return {"id": project["id"], "status": "skip", "msg": "[AI跳过: 无正文]", "project": project}
 
             result = self.extract_project_info(project["article_title"], content)
+            if result and isinstance(result, dict) and "__error" in result:
+                return {
+                    "id": project["id"],
+                    "status": "fail",
+                    "msg": f"[AI失败: {result.get('__error')}]",
+                    "project": project,
+                }
             if result:
                 return {"id": project["id"], "status": "ok", "result": result, "project": project}
             return {"id": project["id"], "status": "fail", "msg": "[AI失败]", "project": project}
