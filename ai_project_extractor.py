@@ -63,6 +63,7 @@ class AIProjectExtractor:
         candidate_models = []
         if models:
             if isinstance(models, str):
+                # split on whitespace or commas
                 candidate_models = [m for m in re.split(r"[\\s,]+", models.strip()) if m]
             else:
                 candidate_models = list(models)
