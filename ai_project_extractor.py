@@ -63,6 +63,7 @@ class AIProjectExtractor:
             self.models = ["THUDM/GLM-4-9B-0414"]
         self._model_idx = 0
         self._model_lock = threading.Lock()
+        self._bad_models = set()
 
         self.db_path = db_path
         self.client = OpenAI(api_key=api_key, base_url=base_url)
@@ -98,11 +99,17 @@ class AIProjectExtractor:
 
     def _next_model(self):
         with self._model_lock:
-            model = self.models[self._model_idx % len(self.models)]
-            self._model_idx += 1
-        key = f"{self.base_url}::{model}"
-        limiter = self.__class__._rate_limiters.setdefault(key, RateLimiter(self.rpm_limit))
-        return model, limiter
+            attempts = 0
+            while attempts < len(self.models):
+                model = self.models[self._model_idx % len(self.models)]
+                self._model_idx += 1
+                attempts += 1
+                if model in self._bad_models:
+                    continue
+                key = f"{self.base_url}::{model}"
+                limiter = self.__class__._rate_limiters.setdefault(key, RateLimiter(self.rpm_limit))
+                return model, limiter
+        raise RuntimeError("No valid models available")
 
     def extract_project_info(self, title, content, model_name=None):
         raw_response = ""
@@ -218,10 +225,10 @@ Article Content (truncated 1000 chars):
             msg = f"API error: {e}"
             print(msg)
             try:
-                self.log_debug(f"{msg} | raw={raw_response[:500]}")
+                self.log_debug(f"{msg} | raw={raw_response[:500]} | model={model_name}")
             except Exception:
                 pass
-            return {"__error": msg, "__raw": raw_response[:500]}
+            return {"__error": msg, "__raw": raw_response[:500], "__model": model_name}
 
     def process_single_project_once(self, project):
         if not self.running:
@@ -247,13 +254,16 @@ Article Content (truncated 1000 chars):
                 result = result[0] if result and isinstance(result[0], dict) else {"__error": "invalid_list_result"}
             if result and isinstance(result, dict) and "__error" in result:
                 err = result.get("__error", "")
+                mdl = result.get("__model")
                 status = "fail"
                 if "rate" in err.lower():
                     status = "rate_limit"
+                if "does not exist" in err.lower() and mdl:
+                    self._bad_models.add(mdl)
                 return {
                     "id": project["id"],
                     "status": status,
-                    "msg": f"[AI失败: {err}]",
+                    "msg": f"[AI失败: {err} @ {mdl or ''}]",
                     "project": project,
                 }
             if result:
