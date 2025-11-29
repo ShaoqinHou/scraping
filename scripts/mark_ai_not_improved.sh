@@ -13,7 +13,7 @@ if [[ ! -f "${DB_PATH}" ]]; then
 fi
 
 echo "Using DB: ${DB_PATH}"
-python - <<PY
+python3 - <<PY
 import sqlite3, sys, os
 db = os.environ.get("DB_PATH", "${DB_PATH}")
 conn = sqlite3.connect(db)
