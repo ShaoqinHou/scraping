@@ -291,13 +291,14 @@ Article Content (truncated 1000 chars):
                     "status": status,
                     "msg": f"[AI失败: {err} @ {mdl or ''}]",
                     "project": project,
+                    "model": mdl or model_name,
                 }
             if result:
-                return {"id": project["id"], "status": "ok", "result": result, "project": project}
-            return {"id": project["id"], "status": "fail", "msg": "[AI失败]", "project": project}
+                return {"id": project["id"], "status": "ok", "result": result, "project": project, "model": model_name}
+            return {"id": project["id"], "status": "fail", "msg": "[AI失败]", "project": project, "model": model_name}
         except Exception as e:
             print(f"Error processing project {project.get('id')}: {e}")
-            return {"id": project.get("id"), "status": "fail", "msg": "[AI失败]", "project": project}
+            return {"id": project.get("id"), "status": "fail", "msg": "[AI失败]", "project": project, "model": model_name}
         finally:
             conn.close()
 
@@ -338,7 +339,7 @@ Article Content (truncated 1000 chars):
                 d = to_decimal(val)
                 return float(d) if d is not None else None
             if isinstance(val, str):
-                s = val.strip()
+                s = val.strip().replace(",", "")
                 d = to_decimal(s)
                 if d is None:
                     m = re.search(r"([0-9]+(?:\\.[0-9]+)?)", s)
@@ -369,6 +370,7 @@ Article Content (truncated 1000 chars):
         def write_result(project_id, payload):
             status = payload.get("status")
             proj = payload.get("project", {}) or {}
+            mdl = payload.get("model")
             # Load current row to avoid wiping fields when AI returns empty
             writer_cur.execute(
                 """
@@ -376,7 +378,7 @@ Article Content (truncated 1000 chars):
                        owner, energy_type, classic_quality, province, city,
                        h2_output_tpy, h2_output_nm3_per_h, electrolyzer_count,
                        co2_reduction_tpy, project_summary, project_overview, project_progress,
-                       article_type, numerical_data
+                       article_type, numerical_data, ai_model
                 FROM projects_classic WHERE id = ?
                 """,
                 (project_id,),
@@ -432,7 +434,7 @@ Article Content (truncated 1000 chars):
                             h2_output_tpy = ?, h2_output_nm3_per_h = ?, electrolyzer_count = ?,
                             co2_reduction_tpy = ?, project_summary = ?,
                             project_overview = ?, project_progress = ?,
-                            article_type = ?, numerical_data = ?,
+                            article_type = ?, numerical_data = ?, ai_model = ?,
                             is_ai_improved = 1
                         WHERE id = ?
                         """,
@@ -457,10 +459,15 @@ Article Content (truncated 1000 chars):
                             merged.get("project_progress"),
                             merged.get("article_type"),
                             merged.get("numerical_data"),
+                            mdl,
                             project_id,
                         ),
                     )
                     writer_conn.commit()
+                    try:
+                        self.log_debug(f"OK model={mdl} id={project_id} title={proj.get('article_title','')}")
+                    except Exception:
+                        pass
                     return
 
             # Failure/skip: mark as not improved so it can retry next run.
