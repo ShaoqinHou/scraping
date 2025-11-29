@@ -200,60 +200,86 @@ Article Content:
         def write_result(project_id, payload):
             status = payload.get("status")
             proj = payload.get("project", {}) or {}
+            # Load current row to avoid wiping fields when AI returns empty
+            writer_cur.execute(
+                """
+                SELECT project_name, stage, event_date, location, capacity_mw, investment_cny,
+                       owner, energy_type, classic_quality, province, city,
+                       h2_output_tpy, h2_output_nm3_per_h, electrolyzer_count,
+                       co2_reduction_tpy, project_summary, project_overview, project_progress,
+                       article_type, numerical_data
+                FROM projects_classic WHERE id = ?
+                """,
+                (project_id,),
+            )
+            current = writer_cur.fetchone()
+            if not current:
+                return
+            current = dict(current)
+
             if status == "ok":
                 res = payload.get("result", {}) or {}
-                writer_cur.execute(
-                    """
-                    UPDATE projects_classic 
-                    SET project_name = ?, stage = ?, event_date = ?, location = ?,
-                        capacity_mw = ?, investment_cny = ?, owner = ?, energy_type = ?,
-                        classic_quality = ?, province = ?, city = ?,
-                        h2_output_tpy = ?, h2_output_nm3_per_h = ?, electrolyzer_count = ?,
-                        co2_reduction_tpy = ?, project_summary = ?,
-                        project_overview = ?, project_progress = ?,
-                        article_type = ?, numerical_data = ?,
-                        is_ai_improved = 1
-                    WHERE id = ?
-                    """,
-                    (
-                        res.get("project_name"),
-                        res.get("stage"),
-                        res.get("event_date"),
-                        res.get("location"),
-                        res.get("capacity_mw"),
-                        res.get("investment_cny"),
-                        res.get("owner"),
-                        res.get("energy_type"),
-                        res.get("classic_quality"),
-                        res.get("province"),
-                        res.get("city"),
-                        res.get("h2_output_tpy"),
-                        res.get("h2_output_nm3_per_h"),
-                        res.get("electrolyzer_count"),
-                        res.get("co2_reduction_tpy"),
-                        res.get("project_summary"),
-                        res.get("project_overview"),
-                        res.get("project_progress"),
-                        res.get("article_type"),
-                        res.get("numerical_data"),
-                        project_id,
-                    ),
-                )
-            else:
-                note = payload.get("msg") or "[AI失败]"
-                writer_cur.execute(
-                    """
-                    UPDATE projects_classic
-                    SET is_ai_improved = 2,
-                        project_progress = COALESCE(project_progress, '') || ?
-                    WHERE id = ?
-                    """,
-                    (note, project_id),
-                )
+                # If result is empty, treat as fail to allow retry
+                if not any(res.values()):
+                    status = "fail"
+                else:
+                    merged = {}
+                    for k, v in current.items():
+                        merged[k] = res.get(k) if (res.get(k) not in (None, "")) else v
+                    writer_cur.execute(
+                        """
+                        UPDATE projects_classic 
+                        SET project_name = ?, stage = ?, event_date = ?, location = ?,
+                            capacity_mw = ?, investment_cny = ?, owner = ?, energy_type = ?,
+                            classic_quality = ?, province = ?, city = ?,
+                            h2_output_tpy = ?, h2_output_nm3_per_h = ?, electrolyzer_count = ?,
+                            co2_reduction_tpy = ?, project_summary = ?,
+                            project_overview = ?, project_progress = ?,
+                            article_type = ?, numerical_data = ?,
+                            is_ai_improved = 1
+                        WHERE id = ?
+                        """,
+                        (
+                            merged.get("project_name"),
+                            merged.get("stage"),
+                            merged.get("event_date"),
+                            merged.get("location"),
+                            merged.get("capacity_mw"),
+                            merged.get("investment_cny"),
+                            merged.get("owner"),
+                            merged.get("energy_type"),
+                            merged.get("classic_quality"),
+                            merged.get("province"),
+                            merged.get("city"),
+                            merged.get("h2_output_tpy"),
+                            merged.get("h2_output_nm3_per_h"),
+                            merged.get("electrolyzer_count"),
+                            merged.get("co2_reduction_tpy"),
+                            merged.get("project_summary"),
+                            merged.get("project_overview"),
+                            merged.get("project_progress"),
+                            merged.get("article_type"),
+                            merged.get("numerical_data"),
+                            project_id,
+                        ),
+                    )
+                    writer_conn.commit()
+                    return
+
+            # Failure/skip: mark as not improved so it can retry next run
+            note = payload.get("msg") or "[AI失败]"
+            writer_cur.execute(
+                """
+                UPDATE projects_classic
+                SET is_ai_improved = 0,
+                    project_progress = COALESCE(project_progress, '') || ?
+                WHERE id = ?
+                """,
+                (note, project_id),
+            )
             writer_conn.commit()
 
         try:
-            # Reset any pending markers from a previous crash/run
             cursor.execute("UPDATE projects_classic SET is_ai_improved = 0 WHERE is_ai_improved = 9")
             conn.commit()
 
@@ -302,7 +328,6 @@ Article Content:
 
                     if payload and payload.get("id") is not None:
                         write_result(payload["id"], payload)
-                    # If id is missing, skip write to avoid touching wrong rows
 
                     if progress_callback:
                         title = ""
