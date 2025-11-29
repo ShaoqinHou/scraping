@@ -115,14 +115,12 @@ class AIProjectExtractor:
 
 5.  **location** (地点): 项目地点（城市，省份）。
 
-6.  **capacity_mw** (产能_MW): 项目产能，必须统一转换为 MW（兆瓦）后的纯数字。
-    - GW → *1000；万千瓦 → *10；千瓦(kW) → /1000；瓦(W) → /1,000,000。
+6.  **capacity_mw** (产能_MW): 项目产能，直接返回原文中的数值+单位（例如 "5.6GW"、"20万千瓦"），不做单位换算，保持原样。
     - 如果只出现“/年产氢”“/产量”而非装机规模，留空。
-    - **只返回数字**（不带单位、不带列表）。
+    - 不返回列表。
 
-7.  **investment_cny** (投资_人民币): 总投资额，必须统一为“元”后的纯数字。
-    - 亿元 → *1e8；万元 → *1e4；百万/千/百 → 相应换算。
-    - **只返回数字**（不带单位、不带列表）。
+7.  **investment_cny** (投资_人民币): 总投资额，直接返回原文中的数值+单位（例如 "5.06亿元"、"8000万元"），不做单位换算，保持原样。
+    - 不返回列表。
 
 8.  **owner** (业主/开发商): 项目的主要开发商、投资方或业主。
     - 寻找 "建设单位"、"投资方"、"业主"。
@@ -328,18 +326,41 @@ Article Content (truncated 1000 chars):
 
             if status == "ok":
                 res = payload.get("result", {}) or {}
-                # If result is empty, treat as fail to allow retry
+                # If result is empty, treat as fail to avoid wiping with None
                 if not any(res.values()):
                     status = "fail"
                 else:
+                    # Overwrite existing fields with AI result (clear if missing)
                     merged = {}
-                    for k, v in current.items():
+                    fields = [
+                        "project_name",
+                        "stage",
+                        "event_date",
+                        "location",
+                        "capacity_mw",
+                        "investment_cny",
+                        "owner",
+                        "energy_type",
+                        "classic_quality",
+                        "province",
+                        "city",
+                        "h2_output_tpy",
+                        "h2_output_nm3_per_h",
+                        "electrolyzer_count",
+                        "co2_reduction_tpy",
+                        "project_summary",
+                        "project_overview",
+                        "project_progress",
+                        "article_type",
+                        "numerical_data",
+                    ]
+                    for k in fields:
                         new_val = res.get(k)
                         if k in ("capacity_mw", "investment_cny", "h2_output_tpy", "h2_output_nm3_per_h", "co2_reduction_tpy"):
                             norm = normalize_number(new_val, k)
-                            merged[k] = norm if norm is not None else v
+                            merged[k] = norm if norm is not None else None
                         else:
-                            merged[k] = normalize_value(new_val) if (new_val not in (None, "")) else v
+                            merged[k] = normalize_value(new_val) if (new_val not in (None, "")) else None
                     writer_cur.execute(
                         """
                         UPDATE projects_classic 
@@ -500,7 +521,6 @@ def main():
     if not api_key:
         print("Error: SILICONFLOW_API_KEY environment variable not set.")
         return
-
     extractor = AIProjectExtractor(api_key)
     extractor.run()
 
