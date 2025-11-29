@@ -2,6 +2,9 @@ import sqlite3
 import os
 import json
 import concurrent.futures
+import time
+import threading
+import collections
 from pathlib import Path
 
 from openai import OpenAI
@@ -9,6 +12,28 @@ from openai import OpenAI
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DB_PATH = str(BASE_DIR / "qn_hydrogen_monitor.db")
 LOG_PATH = BASE_DIR / "ai_project_extractor.log"
+
+
+class RateLimiter:
+    def __init__(self, rpm: int):
+        self.rpm = rpm
+        self.window = 60.0
+        self.times = collections.deque()
+        self.lock = threading.Lock()
+
+    def wait(self):
+        if not self.rpm or self.rpm <= 0:
+            return
+        while True:
+            with self.lock:
+                now = time.time()
+                while self.times and now - self.times[0] > self.window:
+                    self.times.popleft()
+                if len(self.times) < self.rpm:
+                    self.times.append(now)
+                    return
+                sleep_time = self.window - (now - self.times[0]) + 0.01
+            time.sleep(sleep_time)
 
 
 class AIProjectExtractor:
@@ -19,6 +44,7 @@ class AIProjectExtractor:
         model="THUDM/GLM-4-9B-0414",
         db_path=DEFAULT_DB_PATH,
         request_timeout=20,
+        rpm_limit: int | None = None,
     ):
         self.api_key = api_key
         self.base_url = base_url
@@ -27,6 +53,8 @@ class AIProjectExtractor:
         self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.request_timeout = request_timeout
         self.running = False
+        self.rpm_limit = rpm_limit or int(os.environ.get("AI_RPM_LIMIT", "0") or 0)
+        self.rate_limiter = RateLimiter(self.rpm_limit) if self.rpm_limit else None
 
     def log_debug(self, msg: str) -> None:
         try:
@@ -184,6 +212,9 @@ Article Content:
             if not content:
                 return {"id": project["id"], "status": "skip", "msg": "[AI跳过: 无正文]", "project": project}
 
+            if self.rate_limiter:
+                self.rate_limiter.wait()
+
             result = self.extract_project_info(project["article_title"], content)
             if result and isinstance(result, dict) and "__error" in result:
                 return {
@@ -223,6 +254,14 @@ Article Content:
         writer_conn = self.get_db_connection()
         writer_cur = writer_conn.cursor()
 
+        def normalize_value(v):
+            if isinstance(v, (list, dict)):
+                try:
+                    return json.dumps(v, ensure_ascii=False)
+                except Exception:
+                    return str(v)
+            return v
+
         def write_result(project_id, payload):
             status = payload.get("status")
             proj = payload.get("project", {}) or {}
@@ -251,7 +290,8 @@ Article Content:
                 else:
                     merged = {}
                     for k, v in current.items():
-                        merged[k] = res.get(k) if (res.get(k) not in (None, "")) else v
+                        new_val = res.get(k)
+                        merged[k] = normalize_value(new_val) if (new_val not in (None, "")) else v
                     writer_cur.execute(
                         """
                         UPDATE projects_classic 
