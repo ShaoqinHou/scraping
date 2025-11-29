@@ -997,7 +997,11 @@ def run_ai_extractor():
 
     secrets = load_secrets()
     api_key = secrets.get("SILICONFLOW_API_KEY")
-    model = secrets.get("SILICONFLOW_MODEL", "deepseek-ai/DeepSeek-V3")
+    default_models = (
+        "Qwen/Qwen2.5-7B-Instruct Qwen/Qwen2-7B-Instruct "
+        "Qwen/Qwen2.5-Coder-7B-Instruct THUDM/glm-4-9b-chat THUDM/GLM-4-9B-0414"
+    )
+    model = secrets.get("SILICONFLOW_MODEL", default_models)
     
     if not api_key:
         return jsonify({"ok": False, "message": "未配置API Key"}), 400
@@ -1011,7 +1015,7 @@ def run_ai_extractor():
 
     def task():
         try:
-            extractor = AIProjectExtractor(api_key, model=model, rpm_limit=int(rpm_limit))
+            extractor = AIProjectExtractor(api_key, models=model, rpm_limit=int(rpm_limit))
             ai_progress(stage="running", message="AI提取启动", current=0, total=0)
             extractor.run(
                 max_projects=int(max_projects),
