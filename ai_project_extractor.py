@@ -61,16 +61,15 @@ class AIProjectExtractor:
         self.base_url = base_url
         # Accept single model or list of models
         candidate_models = []
+        candidate_models = []
         if models:
             if isinstance(models, str):
-                # split on whitespace or commas
-                candidate_models = [m for m in re.split(r"[\\s,]+", models.strip()) if m]
+                # split on whitespace or commas (correct regex)
+                candidate_models = [m for m in re.split(r"[,\s]+", models.strip()) if m]
             else:
                 candidate_models = list(models)
         elif model:
             candidate_models = [model]
-        else:
-            candidate_models = []
 
         cleaned = []
         for m in candidate_models:
