@@ -241,8 +241,11 @@ Article Content (truncated 1000 chars):
                 parsed = parsed.split("```json")[1].split("```")[0].strip()
             elif "```" in parsed:
                 parsed = parsed.split("```")[1].split("```")[0].strip()
-
-            return json.loads(parsed)
+            # Strip line comments like // ... which break json.loads
+            parsed_no_comments = "\n".join(
+                line for line in parsed.splitlines() if not line.strip().startswith("//")
+            )
+            return json.loads(parsed_no_comments)
         except Exception as e:
             msg = f"API error: {e}"
             print(msg)
@@ -374,10 +377,10 @@ Article Content (truncated 1000 chars):
                 s = val.strip().replace(",", "")
                 d = to_decimal(s)
                 if d is None:
-                    m = re.search(r"([0-9]+(?:\\.[0-9]+)?)", s)
-                    d = to_decimal(m.group(1)) if m else None
-                if d is None:
-                    return None
+                m = re.search(r"([0-9]+(?:\\.[0-9]+)?)", s)
+                d = to_decimal(m.group(1)) if m else None
+            if d is None:
+                return None
                 if "亿" in s:
                     return float(d * Decimal("1e8"))
                 if "万元" in s or "万人民币" in s:
