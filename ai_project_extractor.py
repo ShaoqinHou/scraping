@@ -56,7 +56,14 @@ class AIProjectExtractor:
         self.request_timeout = request_timeout
         self.running = False
         self.rpm_limit = rpm_limit or int(os.environ.get("AI_RPM_LIMIT", "0") or 0)
-        self.rate_limiter = RateLimiter(self.rpm_limit) if self.rpm_limit else None
+        if self.rpm_limit <= 0:
+            self.rpm_limit = 20
+        # Per-model limiter so different models don't share the same window
+        if not hasattr(self.__class__, "_rate_limiters"):
+            self.__class__._rate_limiters = {}
+        self.rate_limiter = self.__class__._rate_limiters.setdefault(
+            f"{self.base_url}::{self.model}", RateLimiter(self.rpm_limit)
+        )
 
     def log_debug(self, msg: str) -> None:
         try:
