@@ -1,28 +1,39 @@
-
 import sqlite3
 import os
 import json
-import time
 import concurrent.futures
-from openai import OpenAI
 from pathlib import Path
+
+from openai import OpenAI
 
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DB_PATH = str(BASE_DIR / "qn_hydrogen_monitor.db")
 
+
 class AIProjectExtractor:
-    def __init__(self, api_key, base_url="https://api.siliconflow.cn/v1", model="THUDM/GLM-4-9B-0414", db_path=DEFAULT_DB_PATH, request_timeout=20):
+    def __init__(
+        self,
+        api_key,
+        base_url="https://api.siliconflow.cn/v1",
+        model="THUDM/GLM-4-9B-0414",
+        db_path=DEFAULT_DB_PATH,
+        request_timeout=20,
+    ):
         self.api_key = api_key
         self.base_url = base_url
         self.model = model
         self.db_path = db_path
         self.client = OpenAI(api_key=api_key, base_url=base_url)
-        # Per-request timeout to avoid hanging on a single article
         self.request_timeout = request_timeout
         self.running = False
 
     def get_db_connection(self):
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, check_same_thread=False)
+        try:
+            conn.execute("PRAGMA journal_mode=WAL;")
+            conn.execute("PRAGMA synchronous=NORMAL;")
+        except Exception:
+            pass
         conn.row_factory = sqlite3.Row
         return conn
 
@@ -103,39 +114,38 @@ class AIProjectExtractor:
     - 例如："11月15日签署投资协议"、"开始打桩工程"。
 
 20. **numerical_data** (数值数据汇总): 文本中发现的所有数值数据的汇总列表。
-    - 格式为带符号的列表字符串（例如："- 投资: 5亿元\n- 产能: 200MW\n- 氢产量: 1万吨/年"）。
+    - 格式为带符号的列表字符串（例如："- 投资: 5亿元\\n- 产能: 200MW\\n- 氢产量: 1万吨/年"）。
     - 必须包含单位。
-    - Capture everything: money, capacity, output, land area, dates, counts, etc.
+    - Capture everything: money, capacity, output, land area, dates, counts, etc。
 
 Return ONLY valid JSON.
 """
-        
+
         user_prompt = f"""
 Article Title: {title}
 Article Content:
 {content[:3000]}
 """
-        
+
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
+                    {"role": "user", "content": user_prompt},
                 ],
                 temperature=0.1,
                 max_tokens=1500,
                 extra_body={"top_k": 5, "top_p": 0.85, "repetition_penalty": 1.05},
                 timeout=self.request_timeout,
             )
-            
+
             content = response.choices[0].message.content.strip()
-            # Remove markdown code blocks if present
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
             elif "```" in content:
                 content = content.split("```")[1].split("```")[0].strip()
-            
+
             return json.loads(content)
         except Exception as e:
             print(f"Error calling API: {e}")
@@ -144,24 +154,56 @@ Article Content:
     def process_single_project_once(self, project):
         if not self.running:
             return None
-            
+
         conn = self.get_db_connection()
         cursor = conn.cursor()
         try:
-            cursor.execute("SELECT main_text FROM articles WHERE url = ?", (project['url'],))
+            cursor.execute("SELECT main_text FROM articles WHERE url = ?", (project["url"],))
             article_row = cursor.fetchone()
-            content = article_row['main_text'] if article_row and article_row['main_text'] else project['project_summary']
-            
+            content = article_row["main_text"] if article_row and article_row["main_text"] else project["project_summary"]
+
             if not content:
-                cursor.execute("UPDATE projects_classic SET is_ai_improved = 2, project_progress = COALESCE(project_progress, '') || '[AI跳过: 无正文]' WHERE id = ?", (project['id'],))
-                conn.commit()
-                return None
-                
-            result = self.extract_project_info(project['article_title'], content)
-            
+                return {"id": project["id"], "status": "skip", "msg": "[AI跳过: 无正文]", "project": project}
+
+            result = self.extract_project_info(project["article_title"], content)
             if result:
-                # Update all fields
-                cursor.execute("""
+                return {"id": project["id"], "status": "ok", "result": result, "project": project}
+            return {"id": project["id"], "status": "fail", "msg": "[AI失败]", "project": project}
+        except Exception as e:
+            print(f"Error processing project {project.get('id')}: {e}")
+            return {"id": project.get("id"), "status": "fail", "msg": "[AI失败]", "project": project}
+        finally:
+            conn.close()
+
+    def process_single_project(self, project):
+        res = None
+        for _ in (1, 2):
+            if not self.running:
+                return None
+            res = self.process_single_project_once(project)
+            if res and res.get("status") in ("ok", "skip", "fail"):
+                return res
+        return res
+
+    def run(self, max_projects=10, max_workers=5, progress_callback=None):
+        self.running = True
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+        total = 0
+        completed = 0
+        max_workers = max(1, int(max_workers))
+        max_projects = max(0, int(max_projects))
+
+        writer_conn = self.get_db_connection()
+        writer_cur = writer_conn.cursor()
+
+        def write_result(project_id, payload):
+            status = payload.get("status")
+            proj = payload.get("project", {}) or {}
+            if status == "ok":
+                res = payload.get("result", {}) or {}
+                writer_cur.execute(
+                    """
                     UPDATE projects_classic 
                     SET project_name = ?, stage = ?, event_date = ?, location = ?,
                         capacity_mw = ?, investment_cny = ?, owner = ?, energy_type = ?,
@@ -172,74 +214,61 @@ Article Content:
                         article_type = ?, numerical_data = ?,
                         is_ai_improved = 1
                     WHERE id = ?
-                """, (
-                    result.get('project_name'),
-                    result.get('stage'),
-                    result.get('event_date'),
-                    result.get('location'),
-                    result.get('capacity_mw'),
-                    result.get('investment_cny'),
-                    result.get('owner'),
-                    result.get('energy_type'),
-                    result.get('classic_quality'),
-                    result.get('province'),
-                    result.get('city'),
-                    result.get('h2_output_tpy'),
-                    result.get('h2_output_nm3_per_h'),
-                    result.get('electrolyzer_count'),
-                    result.get('co2_reduction_tpy'),
-                    result.get('project_summary'),
-                    result.get('project_overview'),
-                    result.get('project_progress'),
-                    result.get('article_type'),
-                    result.get('numerical_data'),
-                    project['id']
-                ))
-                conn.commit()
-                return True
-            # No result, mark as failed
-            cursor.execute("UPDATE projects_classic SET is_ai_improved = 2, project_progress = COALESCE(project_progress, '') || '[AI失败]' WHERE id = ?", (project['id'],))
-            conn.commit()
-            return False
-        except Exception as e:
-            print(f"Error processing project {project['id']}: {e}")
-            try:
-                cursor.execute("UPDATE projects_classic SET is_ai_improved = 2, project_progress = COALESCE(project_progress, '') || '[AI失败]' WHERE id = ?", (project['id'],))
-                conn.commit()
-            except Exception:
-                pass
-            return False
-        finally:
-            conn.close()
-
-    def process_single_project(self, project):
-        # Try once; if it fails (including timeout), try one more time with the same per-request timeout.
-        for attempt in (1, 2):
-            if not self.running:
-                return None
-            ok = self.process_single_project_once(project)
-            if ok:
-                return True
-        return False
-
-    def run(self, max_projects=10, max_workers=5, progress_callback=None):
-        self.running = True
-        conn = self.get_db_connection()
-        cursor = conn.cursor()
-        total = 0
-        completed = 0
+                    """,
+                    (
+                        res.get("project_name"),
+                        res.get("stage"),
+                        res.get("event_date"),
+                        res.get("location"),
+                        res.get("capacity_mw"),
+                        res.get("investment_cny"),
+                        res.get("owner"),
+                        res.get("energy_type"),
+                        res.get("classic_quality"),
+                        res.get("province"),
+                        res.get("city"),
+                        res.get("h2_output_tpy"),
+                        res.get("h2_output_nm3_per_h"),
+                        res.get("electrolyzer_count"),
+                        res.get("co2_reduction_tpy"),
+                        res.get("project_summary"),
+                        res.get("project_overview"),
+                        res.get("project_progress"),
+                        res.get("article_type"),
+                        res.get("numerical_data"),
+                        project_id,
+                    ),
+                )
+            else:
+                note = payload.get("msg") or "[AI失败]"
+                writer_cur.execute(
+                    """
+                    UPDATE projects_classic
+                    SET is_ai_improved = 2,
+                        project_progress = COALESCE(project_progress, '') || ?
+                    WHERE id = ?
+                    """,
+                    (note, project_id),
+                )
+            writer_conn.commit()
 
         try:
-            # Only pick rows not yet improved (0/NULL). Skipped rows (2) are not retried.
-            cursor.execute("""
+            # Reset any pending markers from a previous crash/run
+            cursor.execute("UPDATE projects_classic SET is_ai_improved = 0 WHERE is_ai_improved = 9")
+            conn.commit()
+
+            cursor.execute(
+                """
                 SELECT id, article_title, project_summary, url 
                 FROM projects_classic 
                 WHERE is_ai_improved = 0 OR is_ai_improved IS NULL
                 ORDER BY id ASC
                 LIMIT ?
-            """, (max_projects,))
+                """,
+                (max_projects,),
+            )
             projects = [dict(row) for row in cursor.fetchall()]
-            # Mark as pending to avoid double enqueue if run again before completion
+
             if projects:
                 ids = [p["id"] for p in projects]
                 cursor.execute(
@@ -247,41 +276,62 @@ Article Content:
                     ids,
                 )
                 conn.commit()
-            
+
             total = len(projects)
             if progress_callback:
                 progress_callback(stage="running", message=f"发现 {total} 个待处理项目", current=0, total=total)
 
             if total == 0:
                 return
-            
+
             with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
                 futures = {executor.submit(self.process_single_project, p): p for p in projects}
-                
+
                 for future in concurrent.futures.as_completed(futures):
                     if not self.running:
                         executor.shutdown(wait=False, cancel_futures=True)
                         break
-                    
-                    project = futures[future]
-                    completed += 1
-                    # If still marked pending (9), mark back to 0 to allow retry next run
+
+                    payload = None
                     try:
-                        conn2 = self.get_db_connection()
-                        cur2 = conn2.cursor()
-                        cur2.execute("UPDATE projects_classic SET is_ai_improved = CASE WHEN is_ai_improved=9 THEN 0 ELSE is_ai_improved END WHERE id = ?", (project["id"],))
-                        conn2.commit()
-                        conn2.close()
+                        payload = future.result()
                     except Exception:
-                        pass
+                        payload = {"status": "fail", "msg": "[AI失败]", "project": None, "id": None}
+
+                    completed += 1
+
+                    if payload and payload.get("id") is not None:
+                        write_result(payload["id"], payload)
+                    # If id is missing, skip write to avoid touching wrong rows
+
                     if progress_callback:
-                        progress_callback(stage="running", message=f"已处理: {project['article_title']}", current=completed, total=total)
-                
+                        title = ""
+                        if payload and payload.get("project"):
+                            title = payload["project"].get("article_title", "")
+                        progress_callback(
+                            stage="running",
+                            message=f"已处理: {title}",
+                            current=completed,
+                            total=total,
+                        )
+
         finally:
+            try:
+                cursor.execute(
+                    "UPDATE projects_classic SET is_ai_improved = CASE WHEN is_ai_improved=9 THEN 0 ELSE is_ai_improved END"
+                )
+                conn.commit()
+            except Exception:
+                pass
             conn.close()
+            try:
+                writer_conn.close()
+            except Exception:
+                pass
             self.running = False
             if progress_callback:
                 progress_callback(stage="idle", message="AI 提取完成", current=completed, total=total)
+
 
 def main():
     api_key = os.environ.get("SILICONFLOW_API_KEY")
@@ -291,6 +341,7 @@ def main():
 
     extractor = AIProjectExtractor(api_key)
     extractor.run()
+
 
 if __name__ == "__main__":
     main()
