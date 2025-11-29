@@ -197,6 +197,9 @@ Article Content:
                 ))
                 conn.commit()
                 return True
+            # No result, mark as failed
+            cursor.execute("UPDATE projects_classic SET is_ai_improved = 2, project_progress = COALESCE(project_progress, '') || '[AI失败]' WHERE id = ?", (project['id'],))
+            conn.commit()
             return False
         except Exception as e:
             print(f"Error processing project {project['id']}: {e}")
@@ -236,6 +239,14 @@ Article Content:
                 LIMIT ?
             """, (max_projects,))
             projects = [dict(row) for row in cursor.fetchall()]
+            # Mark as pending to avoid double enqueue if run again before completion
+            if projects:
+                ids = [p["id"] for p in projects]
+                cursor.execute(
+                    f"UPDATE projects_classic SET is_ai_improved = 9 WHERE id IN ({','.join(['?']*len(ids))})",
+                    ids,
+                )
+                conn.commit()
             
             total = len(projects)
             if progress_callback:
@@ -254,6 +265,15 @@ Article Content:
                     
                     project = futures[future]
                     completed += 1
+                    # If still marked pending (9), mark back to 0 to allow retry next run
+                    try:
+                        conn2 = self.get_db_connection()
+                        cur2 = conn2.cursor()
+                        cur2.execute("UPDATE projects_classic SET is_ai_improved = CASE WHEN is_ai_improved=9 THEN 0 ELSE is_ai_improved END WHERE id = ?", (project["id"],))
+                        conn2.commit()
+                        conn2.close()
+                    except Exception:
+                        pass
                     if progress_callback:
                         progress_callback(stage="running", message=f"已处理: {project['article_title']}", current=completed, total=total)
                 
