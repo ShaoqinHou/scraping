@@ -217,10 +217,14 @@ Article Content:
 
             result = self.extract_project_info(project["article_title"], content)
             if result and isinstance(result, dict) and "__error" in result:
+                err = result.get("__error", "")
+                status = "fail"
+                if "rate" in err.lower():
+                    status = "rate_limit"
                 return {
                     "id": project["id"],
-                    "status": "fail",
-                    "msg": f"[AI失败: {result.get('__error')}]",
+                    "status": status,
+                    "msg": f"[AI失败: {err}]",
                     "project": project,
                 }
             if result:
@@ -253,6 +257,7 @@ Article Content:
 
         writer_conn = self.get_db_connection()
         writer_cur = writer_conn.cursor()
+        hit_rate_limit = False
 
         def normalize_value(v):
             if isinstance(v, (list, dict)):
@@ -415,6 +420,11 @@ Article Content:
                             current=completed,
                             total=total,
                         )
+                    if payload and payload.get("status") == "rate_limit":
+                        hit_rate_limit = True
+                        # Stop submitting more; cancel remaining futures
+                        executor.shutdown(wait=False, cancel_futures=True)
+                        break
 
         finally:
             try:
@@ -431,7 +441,15 @@ Article Content:
                 pass
             self.running = False
             if progress_callback:
-                progress_callback(stage="idle", message="AI 提取完成", current=completed, total=total)
+                if hit_rate_limit:
+                    progress_callback(
+                        stage="idle",
+                        message="AI 提取出错: 触发限速，已暂停，剩余保留待处理",
+                        current=completed,
+                        total=total,
+                    )
+                else:
+                    progress_callback(stage="idle", message="AI 提取完成", current=completed, total=total)
 
 
 def main():
