@@ -14,6 +14,14 @@ from openai import OpenAI
 BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_DB_PATH = str(BASE_DIR / "qn_hydrogen_monitor.db")
 LOG_PATH = BASE_DIR / "ai_project_extractor.log"
+ALLOWED_MODELS = {
+    "Qwen/Qwen2.5-7B-Instruct",
+    "Qwen/Qwen2-7B-Instruct",
+    "Qwen/Qwen2.5-Coder-7B-Instruct",
+    "THUDM/glm-4-9b-chat",
+    "THUDM/GLM-4-9B-0414",
+    "deepseek-ai/DeepSeek-V3",
+}
 
 
 class RateLimiter:
@@ -52,15 +60,32 @@ class AIProjectExtractor:
         self.api_key = api_key
         self.base_url = base_url
         # Accept single model or list of models
+        candidate_models = []
         if models:
             if isinstance(models, str):
-                self.models = [m for m in re.split(r"[\\s,]+", models.strip()) if m]
+                candidate_models = [m for m in re.split(r"[\\s,]+", models.strip()) if m]
             else:
-                self.models = list(models)
+                candidate_models = list(models)
+        elif model:
+            candidate_models = [model]
         else:
-            self.models = [model] if model else ["THUDM/GLM-4-9B-0414"]
-        if not self.models:
-            self.models = ["THUDM/GLM-4-9B-0414"]
+            candidate_models = []
+
+        cleaned = []
+        for m in candidate_models:
+            m = m.strip()
+            if not m:
+                continue
+            if m in ALLOWED_MODELS:
+                cleaned.append(m)
+            else:
+                try:
+                    self.log_debug(f"Skip unknown model token: {m}")
+                except Exception:
+                    pass
+        if not cleaned:
+            cleaned = ["THUDM/GLM-4-9B-0414"]
+        self.models = cleaned
         self._model_idx = 0
         self._model_lock = threading.Lock()
         self._bad_models = set()
