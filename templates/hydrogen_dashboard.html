@@ -498,11 +498,15 @@
             });
         }
 
-        async function waitForIdle(url) {
+        async function waitForIdle(url, setStatusFn, formatter) {
             while (true) {
                 try {
                     const resp = await fetch(url);
                     const data = await resp.json();
+                    if (setStatusFn && data) {
+                        const msg = formatter ? formatter(data) : (data.message || '');
+                        setStatusFn(msg);
+                    }
                     if (data.stage === 'idle') return;
                 } catch (e) { }
                 await new Promise(r => setTimeout(r, 3000));
@@ -531,7 +535,10 @@
                     const j = await resp1.json().catch(() => ({}));
                     throw new Error(j.message || '氢能监控启动失败');
                 }
-                await waitForIdle('/api/hydrogen/status');
+                await waitForIdle('/api/hydrogen/status', setStatus, (d) => {
+                    const c = d.current || 0, t = d.total || 0;
+                    return `一键运行（1/3）：${d.message || ''} ${t ? `(${c}/${t})` : ''}`;
+                });
 
                 // Step 2: 经典规则
                 setStatus('一键运行（2/3）：经典提取...');
@@ -553,7 +560,10 @@
                     const j = await resp2.json().catch(() => ({}));
                     throw new Error(j.message || '经典提取启动失败');
                 }
-                await waitForIdle('/api/hydrogen/projects/classic/status');
+                await waitForIdle('/api/hydrogen/projects/classic/status', setStatus, (d) => {
+                    const c = d.current || 0, t = d.total || 0;
+                    return `一键运行（2/3）：${d.message || ''} ${t ? `(${c}/${t})` : ''}`;
+                });
 
                 // Step 3: AI
                 setStatus('一键运行（3/3）：AI 提取...');
@@ -571,7 +581,10 @@
                     const j = await resp3.json().catch(() => ({}));
                     throw new Error(j.message || 'AI 提取启动失败');
                 }
-                await waitForIdle('/api/hydrogen/projects/ai/status');
+                await waitForIdle('/api/hydrogen/projects/ai/status', setStatus, (d) => {
+                    const c = d.current || 0, t = d.total || 0;
+                    return `一键运行（3/3）：${d.message || ''} ${t ? `(${c}/${t})` : ''}`;
+                });
 
                 setStatus('一键运行完成');
             } catch (err) {
