@@ -377,10 +377,10 @@ Article Content (truncated 1000 chars):
                 s = val.strip().replace(",", "")
                 d = to_decimal(s)
                 if d is None:
-                m = re.search(r"([0-9]+(?:\.[0-9]+)?)", s)
-                d = to_decimal(m.group(1)) if m else None
-            if d is None:
-                return None
+                    m = re.search(r"([0-9]+(?:\.[0-9]+)?)", s)
+                    d = to_decimal(m.group(1)) if m else None
+                if d is None:
+                    return None
                 if "亿" in s:
                     return float(d * Decimal("1e8"))
                 if "万元" in s or "万人民币" in s:
