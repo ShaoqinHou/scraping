@@ -242,10 +242,22 @@ Article Content (truncated 1000 chars):
             elif "```" in parsed:
                 parsed = parsed.split("```")[1].split("```")[0].strip()
             # Strip line comments like // ... which break json.loads
-            parsed_no_comments = "\n".join(
-                line for line in parsed.splitlines() if not line.strip().startswith("//")
-            )
-            return json.loads(parsed_no_comments)
+            # Strip JS-style line comments and trailing commas, and fix bad escapes
+            lines = []
+            for line in parsed.splitlines():
+                stripped = line.strip()
+                if stripped.startswith("//"):
+                    continue
+                # drop inline // comments
+                if "//" in line:
+                    line = line.split("//", 1)[0]
+                lines.append(line)
+            cleaned = "\n".join(lines)
+            # remove trailing commas before } or ]
+            cleaned = re.sub(r",\s*([\]}])", r"\1", cleaned)
+            # escape invalid backslashes
+            cleaned = re.sub(r'\\(?!["\\/bfnrt]|u[0-9a-fA-F]{4})', r"\\\\", cleaned)
+            return json.loads(cleaned)
         except Exception as e:
             msg = f"API error: {e}"
             print(msg)
