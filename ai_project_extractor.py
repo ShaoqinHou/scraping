@@ -377,7 +377,7 @@ Article Content (truncated 1000 chars):
                 s = val.strip().replace(",", "")
                 d = to_decimal(s)
                 if d is None:
-                m = re.search(r"([0-9]+(?:\\.[0-9]+)?)", s)
+                m = re.search(r"([0-9]+(?:\.[0-9]+)?)", s)
                 d = to_decimal(m.group(1)) if m else None
             if d is None:
                 return None
