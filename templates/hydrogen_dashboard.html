@@ -198,6 +198,12 @@
         <section>
             <h2>氢能站点监控 <span id="hydrogen-status-text"
                     style="font-size: 14px; font-weight: normal; color: #666;"></span></h2>
+            <div class="form-row" style="margin-bottom: 6px;">
+                <button type="button" class="secondary" id="pipeline-btn" onclick="runFullPipeline()">
+                    一键运行（0/3）
+                </button>
+                <span id="pipeline-status" style="color: #555;"></span>
+            </div>
             <p class="desc" id="hydrogen-status-detail">...</p>
             <div class="form-row">
                 <div id="hydrogen-channel-list" style="display: flex; gap: 12px; flex-wrap: wrap;"></div>
@@ -487,6 +493,90 @@
                 if (btn) btn.disabled = false;
                 alert('启动 AI 提取失败: ' + err.message);
             });
+        }
+
+        async function waitForIdle(url) {
+            while (true) {
+                try {
+                    const resp = await fetch(url);
+                    const data = await resp.json();
+                    if (data.stage === 'idle') return;
+                } catch (e) { }
+                await new Promise(r => setTimeout(r, 3000));
+            }
+        }
+
+        async function runFullPipeline() {
+            const btn = document.getElementById('pipeline-btn');
+            const statusEl = document.getElementById('pipeline-status');
+            if (btn) btn.disabled = true;
+            const setStatus = (msg) => { if (statusEl) statusEl.textContent = msg; if (btn) btn.textContent = msg; };
+            try {
+                // Step 1: 氢能监控
+                setStatus('一键运行（1/3）：氢能监控...');
+                const maxNew = parseInt(document.getElementById('hydrogen-max-new').value || '0', 10);
+                const maxPages = parseInt(document.getElementById('hydrogen-max-pages').value || '0', 10);
+                const resp1 = await fetch('/api/hydrogen/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        max_new_articles: maxNew > 0 ? maxNew : null,
+                        max_pages_per_channel: maxPages > 0 ? maxPages : null
+                    })
+                });
+                if (!resp1.ok) {
+                    const j = await resp1.json().catch(() => ({}));
+                    throw new Error(j.message || '氢能监控启动失败');
+                }
+                await waitForIdle('/api/hydrogen/status');
+
+                // Step 2: 经典规则
+                setStatus('一键运行（2/3）：经典提取...');
+                const maxArticlesVal = parseInt(document.getElementById('classic-max-articles').value || '0', 10);
+                const scoreThreshold = parseInt(document.getElementById('classic-score-threshold').value || '2', 10);
+                const maxWorkersVal = parseInt(document.getElementById('classic-max-workers').value || '1', 10);
+                const showBrowser = document.getElementById('classic-show-browser')?.checked || false;
+                const resp2 = await fetch('/api/hydrogen/projects/classic/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        max_articles: maxArticlesVal > 0 ? maxArticlesVal : null,
+                        score_threshold: scoreThreshold,
+                        max_workers: maxWorkersVal,
+                        headless: !showBrowser
+                    })
+                });
+                if (!resp2.ok) {
+                    const j = await resp2.json().catch(() => ({}));
+                    throw new Error(j.message || '经典提取启动失败');
+                }
+                await waitForIdle('/api/hydrogen/projects/classic/status');
+
+                // Step 3: AI
+                setStatus('一键运行（3/3）：AI 提取...');
+                const maxProj = parseInt(document.getElementById('ai-max-projects').value || '4000', 10);
+                const maxWork = parseInt(document.getElementById('ai-max-workers').value || '20', 10);
+                const resp3 = await fetch('/api/hydrogen/projects/ai/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        max_projects: maxProj,
+                        max_workers: maxWork
+                    })
+                });
+                if (!resp3.ok) {
+                    const j = await resp3.json().catch(() => ({}));
+                    throw new Error(j.message || 'AI 提取启动失败');
+                }
+                await waitForIdle('/api/hydrogen/projects/ai/status');
+
+                setStatus('一键运行完成');
+            } catch (err) {
+                alert(err.message || err);
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '一键运行（0/3）'; }
+                if (statusEl) statusEl.textContent = '';
+            }
         }
         
         function pollAiStatus() {
