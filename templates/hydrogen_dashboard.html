@@ -196,14 +196,17 @@
     </header>
     <main>
         <section>
-            <h2>氢能站点监控 <span id="hydrogen-status-text"
-                    style="font-size: 14px; font-weight: normal; color: #666;"></span></h2>
-            <div class="form-row" style="margin-bottom: 6px;">
+            <div class="form-row" style="justify-content: flex-start; gap: 8px;">
                 <button type="button" class="secondary" id="pipeline-btn" onclick="runFullPipeline()">
                     一键运行（0/3）
                 </button>
                 <span id="pipeline-status" style="color: #555;"></span>
             </div>
+        </section>
+
+        <section>
+            <h2>氢能站点监控 <span id="hydrogen-status-text"
+                    style="font-size: 14px; font-weight: normal; color: #666;"></span></h2>
             <p class="desc" id="hydrogen-status-detail">...</p>
             <div class="form-row">
                 <div id="hydrogen-channel-list" style="display: flex; gap: 12px; flex-wrap: wrap;"></div>
