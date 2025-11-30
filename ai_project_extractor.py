@@ -54,7 +54,7 @@ class AIProjectExtractor:
         model="THUDM/GLM-4-9B-0414",
         models=None,
         db_path=DEFAULT_DB_PATH,
-        request_timeout=20,
+        request_timeout=180,
         rpm_limit: int | None = None,
     ):
         self.api_key = api_key
@@ -163,7 +163,7 @@ class AIProjectExtractor:
     - "中标": 中标结果公示。
     - "签约": 签署协议。
     - "前期/规划": 规划/谅解备忘录/框架协议。
-    - "Unknown": 不明确。
+    - "未知": 不明确。严禁输出英文。
 
 4.  **event_date** (事件日期): 事件发生的日期 (YYYY-MM-DD)。如果未找到，使用发布日期。
 
@@ -460,6 +460,8 @@ Article Content (truncated 1000 chars):
                             merged[k] = norm if norm is not None else None
                         else:
                             merged[k] = normalize_value(new_val) if (new_val not in (None, "")) else None
+                    if merged.get("stage") in ("Unknown", "unknown", "UNKNOWN"):
+                        merged["stage"] = "未知"
                     writer_cur.execute(
                         """
                         UPDATE projects_classic 

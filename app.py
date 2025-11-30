@@ -1009,13 +1009,14 @@ def run_ai_extractor():
     payload = request.get_json() or {}
     max_projects = payload.get("max_projects", 10)
     # Reuse the UI “每分钟请求上限” field as a per-minute request cap to avoid rate limits.
-    rpm_limit = payload.get("max_workers", 20)  # default conservative to stay under TPM
-    # Allow a larger worker pool; RPM limiter will enforce overall pace.
-    worker_count = max(1, min(int(rpm_limit), 20))
+    rpm_limit = int(payload.get("max_workers", 20))  # default conservative to stay under TPM
+    # Derive worker pool: per-model cap times number of models to keep batches flowing
+    model_list = [m for m in re.split(r"[,\s]+", str(model).strip()) if m]
+    worker_count = max(1, rpm_limit * max(1, len(model_list)))
 
     def task():
         try:
-            extractor = AIProjectExtractor(api_key, models=model, rpm_limit=int(rpm_limit))
+            extractor = AIProjectExtractor(api_key, models=model, rpm_limit=int(rpm_limit), request_timeout=180)
             ai_progress(stage="running", message="AI提取启动", current=0, total=0)
             extractor.run(
                 max_projects=int(max_projects),
